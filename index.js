@@ -405,6 +405,25 @@ class Splitwise {
     });
     return wrapped;
   }
+
+  createDebt({ from, to, amount, description, groupID }) {
+    return this.createExpense({
+      description,
+      groupID,
+      payment: false,
+      cost: amount,
+      users: [
+        {
+          user_id: from,
+          paid_share: amount,
+        },
+        {
+          user_id: to,
+          owed_share: amount,
+        },
+      ],
+    });
+  }
 }
 
 exports.Splitwise = Splitwise;
