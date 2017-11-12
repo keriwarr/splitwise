@@ -48,19 +48,26 @@ const unnestParameters = params => {
 
   const pairs = Object.entries(params);
 
-  const recursedPairs = pairs.map(([key, value]) => [key, unnestParameters(value)]);
+  const recursedPairs = pairs.map(([key, value]) => [
+    key,
+    unnestParameters(value),
+  ]);
 
-  const flattenedPairs = recursedPairs.map(([key, value]) => R.type(value) === 'Object' ? R.compose(
-    R.fromPairs,
-    R.map(([subKey, subValue]) => [`${key}__${subKey}`, subValue]),
-    R.toPairs,
-  )(value) : {[key]: value});
+  const flattenedPairs = recursedPairs.map(
+    ([key, value]) =>
+      R.type(value) === 'Object'
+        ? R.compose(
+            R.fromPairs,
+            R.map(([subKey, subValue]) => [`${key}__${subKey}`, subValue]),
+            R.toPairs,
+          )(value)
+        : { [key]: value },
+  );
 
   return R.mergeAll(flattenedPairs);
-}
+};
 
 const splitwisifyParameters = R.compose(convertBooleans, unnestParameters);
-
 
 // const createWager = ({ makerID, takerID, makerStake, takerStake, description, makerName }) =>
 //   oAuthPost(
@@ -83,7 +90,14 @@ const splitwisifyParameters = R.compose(convertBooleans, unnestParameters);
  *
  */
 class Splitwise {
-  constructor({ consumerKey, consumerSecret, groupID, userID, expenseID, friendID }) {
+  constructor({
+    consumerKey,
+    consumerSecret,
+    groupID,
+    userID,
+    expenseID,
+    friendID,
+  }) {
     this.consumerKey = consumerKey;
     this.consumerSecret = consumerSecret;
     this.groupID = groupID;
@@ -101,9 +115,9 @@ class Splitwise {
     );
 
     this.getOAuthAccessToken = promisify(
-      this.oauth2.getOAuthAccessToken.bind(
-        this.oauth2, '', { grant_type: 'client_credentials' },
-      ),
+      this.oauth2.getOAuthAccessToken.bind(this.oauth2, '', {
+        grant_type: 'client_credentials',
+      }),
     );
 
     this.oAuthGet = promisify(this.oauth2.get.bind(this.oauth2));
@@ -116,18 +130,21 @@ class Splitwise {
       ENDPOINTS.GET_CURRENCIES,
       PROPS[ENDPOINTS.GET_CURRENCIES],
       'getCurrencies',
+      null,
     );
 
     this.getCategories = this.getWrapper(
       ENDPOINTS.GET_CATEGORIES,
       PROPS[ENDPOINTS.GET_CATEGORIES],
       'getCategories',
+      null,
     );
 
     this.getCurrentUser = this.getWrapper(
       ENDPOINTS.GET_CURRENT_USER,
       PROPS[ENDPOINTS.GET_CURRENT_USER],
       'getCurrentUser',
+      null,
     );
 
     this.getUser = this.getWrapper(
@@ -141,6 +158,7 @@ class Splitwise {
       ENDPOINTS.GET_GROUPS,
       PROPS[ENDPOINTS.GET_GROUPS],
       'getGroups',
+      null,
     );
 
     this.getGroup = this.getWrapper(
@@ -154,6 +172,17 @@ class Splitwise {
       ENDPOINTS.GET_EXPENSES,
       PROPS[ENDPOINTS.GET_EXPENSES],
       'getExpenses',
+      null,
+      [
+        'group_id',
+        'friendship_id',
+        'dated_after',
+        'dated_before',
+        'updated_after',
+        'updated_before',
+        'limit',
+        'offset',
+      ],
     );
 
     this.getExpense = this.getWrapper(
@@ -167,6 +196,7 @@ class Splitwise {
       ENDPOINTS.GET_FRIENDS,
       PROPS[ENDPOINTS.GET_FRIENDS],
       'getFriends',
+      null,
     );
 
     this.getFriend = this.getWrapper(
@@ -180,47 +210,61 @@ class Splitwise {
       ENDPOINTS.GET_NOTIFICATIONS,
       PROPS[ENDPOINTS.GET_NOTIFICATIONS],
       'getNotifications',
+      null,
+      ['updated_after', 'limit'],
     );
   }
 
   oAuthPost(url, postData, token) {
     return oAuthRequest(
-      'POST', url, {
+      'POST',
+      url,
+      {
         'Content-Type': 'application/x-www-form-urlencoded',
-        Authorization: oauth2.buildAuthHeader(token)
-      }, querystring.stringify(postData), null,
-    ).then(JSON.parse)
+        Authorization: oauth2.buildAuthHeader(token),
+      },
+      querystring.stringify(postData),
+      null,
+    ).then(JSON.parse);
   }
 
   splitwiseGet(endpoint) {
-    return token => this.oAuthGet(
-      `${API_URL}${endpoint}`,
-      token
-    ).then(JSON.parse);
+    return token =>
+      this.oAuthGet(`${API_URL}${endpoint}`, token).then(JSON.parse);
   }
 
   splitwisePost(endpoint, postData) {
-    return token => this.oAuthPost(
-      `${API_URL}${endpoint}`,
-      splitwisifyParameters(postData),
-      token
-    ).then(JSON.parse);
+    return token =>
+      this.oAuthPost(
+        `${API_URL}${endpoint}`,
+        splitwisifyParameters(postData),
+        token,
+      ).then(JSON.parse);
   }
 
-  getWrapper(endpoint, prop, methodName, paramName) {
+  getWrapper(endpoint, prop, methodName, idParamName, queryParamNames = []) {
     // if (!endpoint) ...
     const wrapped = (params = {}, callback) => {
       let id = '';
-      if (paramName) {
-        id = params[paramName] || this[paramName];
+      if (idParamName) {
+        id = params['id'] || params[idParamName] || this[idParamName];
         if (!id) {
-          if (callback) callback(`must provide parameter "${paramName}"`, null);
-          return Promise.reject(`must provide parameter "${paramName}"`);
+          if (callback) callback(`must provide id parameter`, null);
+          return Promise.reject(`must provide id parameter`);
         }
       }
 
-      let resultPromise = this.tokenPromise
-        .then(this.splitwiseGet(`${endpoint}${id}`));
+      const queryParams = querystring.stringify(
+        R.pick(queryParamNames, params),
+      );
+
+      let url = `${endpoint}${id}`;
+
+      if (queryParams) {
+        url = `${url}?${queryParams}`;
+      }
+
+      let resultPromise = this.tokenPromise.then(this.splitwiseGet(url));
 
       if (prop) {
         resultPromise = resultPromise.then(R.prop(prop));
@@ -235,10 +279,13 @@ class Splitwise {
       return resultPromise;
     };
 
-    Object.defineProperty(wrapped, 'name', {value: methodName, writable: false});
+    Object.defineProperty(wrapped, 'name', {
+      value: methodName,
+      writable: false,
+    });
     return wrapped;
   }
-};
+}
 
 exports.Splitwise = Splitwise;
 exports.default = Splitwise;
