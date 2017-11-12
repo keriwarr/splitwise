@@ -69,22 +69,30 @@ const unnestParameters = params => {
 
 const splitwisifyParameters = R.compose(convertBooleans, unnestParameters);
 
-// const createWager = ({ makerID, takerID, makerStake, takerStake, description, makerName }) =>
-//   oAuthPost(
-//     `${splitwiseAPIURL}${splitwiseCreateExpenseEndpoint}`, {
-//       payment: false,
-//       cost: makerStake + takerStake,
-//       description: description,
-//       group_id: process.env.SPLITWISE_GROUP_ID,
-//       details: `${pledgeHeader}\nCreated by ${makerName} at ${new Date().toISOString()}`,
-//       currency_code: 'PYG',
-//       users__0__user_id: process.env.SPLITWISE_SPECIAL_USER_ID,
-//       users__0__owed_share: makerStake + takerStake,
-//       users__1__user_id: makerID,
-//       users__1__paid_share: takerStake,
-//       users__2__user_id: takerID,
-//       users__2__paid_share: makerStake,
-//     }).then(console.log);
+// const createWager = ({
+//   makerID,
+//   takerID,
+//   makerStake,
+//   takerStake,
+//   description,
+//   makerName,
+// }) =>
+//   oAuthPost(`${splitwiseAPIURL}${splitwiseCreateExpenseEndpoint}`, {
+//     payment: false,
+//     cost: makerStake + takerStake,
+//     description: description,
+//     group_id: process.env.SPLITWISE_GROUP_ID,
+//     details: `${pledgeHeader}\nCreated by ${
+//       makerName
+//     } at ${new Date().toISOString()}`,
+//     currency_code: 'PYG',
+//     users__0__user_id: process.env.SPLITWISE_SPECIAL_USER_ID,
+//     users__0__owed_share: makerStake + takerStake,
+//     users__1__user_id: makerID,
+//     users__1__paid_share: takerStake,
+//     users__2__user_id: takerID,
+//     users__2__paid_share: makerStake,
+//   }).then(console.log);
 
 /**
  *
@@ -122,6 +130,7 @@ class Splitwise {
 
     this.oAuthGet = promisify(this.oauth2.get.bind(this.oauth2));
 
+    // eslint-disable-next-line no-underscore-dangle
     this.oAuthRequest = promisify(this.oauth2._request.bind(this.oauth2));
 
     this.tokenPromise = this.getOAuthAccessToken();
@@ -216,12 +225,12 @@ class Splitwise {
   }
 
   oAuthPost(url, postData, token) {
-    return oAuthRequest(
+    return this.oAuthRequest(
       'POST',
       url,
       {
         'Content-Type': 'application/x-www-form-urlencoded',
-        Authorization: oauth2.buildAuthHeader(token),
+        Authorization: this.oauth2.buildAuthHeader(token),
       },
       querystring.stringify(postData),
       null,
@@ -247,10 +256,11 @@ class Splitwise {
     const wrapped = (params = {}, callback) => {
       let id = '';
       if (idParamName) {
-        id = params['id'] || params[idParamName] || this[idParamName];
+        id = params.id || params[idParamName] || this[idParamName];
         if (!id) {
-          if (callback) callback(`must provide id parameter`, null);
-          return Promise.reject(`must provide id parameter`);
+          const error = new Error(`must provide id parameter`);
+          if (callback) callback(error, null);
+          return Promise.reject(error);
         }
       }
 
