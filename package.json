@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "eslint-config-prettier": "2.7.0",
     "oauth": "^0.9.15",
     "querystring": "^0.2.0",
     "ramda": "^0.25.0"
@@ -18,5 +19,23 @@
   },
   "lint-staged": {
     "*.{js,json,css}": ["prettier --write", "git add"]
+  },
+  "name": "splitwise",
+  "version": "0.0.0",
+  "description": "Wrapper library for the Splitwise API",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/keriwarr/splitwise.git"
+  },
+  "keywords": ["splitwise"],
+  "author": "Keri Warr",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/keriwarr/splitwise/issues"
+  },
+  "homepage": "https://github.com/keriwarr/splitwise#readme",
+  "engines": {
+    "node": "8.9.1"
   }
 }
