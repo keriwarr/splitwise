@@ -6,7 +6,7 @@ Created by [Keri Warr](https://keri.warr.ca) because he 💖s Splitwise.
 
 ## Usage
 
-This package can be used with Node with version at least `8`.
+This package can be used with Node with version at least `6.0.0`.
 
 ## Quickstart
 
