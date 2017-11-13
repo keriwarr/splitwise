@@ -17,9 +17,10 @@
   },
   "homepage": "https://github.com/keriwarr/splitwise#readme",
   "engines": {
-    "node": "8.9.1"
+    "node": ">=6.0.0"
   },
   "dependencies": {
+    "es6-promisify": "5.0.0",
     "oauth": "^0.9.15",
     "querystring": "^0.2.0",
     "ramda": "^0.25.0"

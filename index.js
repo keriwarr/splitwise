@@ -1,6 +1,6 @@
 const { OAuth2 } = require('oauth')
 const querystring = require('querystring')
-const { promisify } = require('util')
+const promisify = require('es6-promisify')
 const R = require('ramda')
 
 const API_URL = 'https://secure.splitwise.com/api/v3.0/'
@@ -248,7 +248,7 @@ const unnestParameters = params => {
     return params
   }
 
-  const pairs = Object.entries(params)
+  const pairs = R.toPairs(params)
 
   const recursedPairs = pairs.map(([key, value]) => [
     key,
@@ -309,7 +309,7 @@ class Splitwise {
 
     this.tokenPromise = this.getOAuthAccessToken()
 
-    Object.values(METHODS).forEach(method => {
+    R.values(METHODS).forEach(method => {
       this[method.methodName] = this.methodWrapper(method)
     })
   }
