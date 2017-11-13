@@ -25,7 +25,7 @@ const ID_PARAM_NAMES = {
   FRIEND: 'friendID'
 }
 
-const METHOD_TYPES = {
+const METHOD_VERBS = {
   GET: 'GET',
   POST: 'POST',
   PUT: 'PUT',
@@ -36,38 +36,38 @@ const METHODS = {
   GET_CURRENCIES: {
     endpoint: 'get_currencies',
     methodName: 'getCurrencies',
-    method: METHOD_TYPES.GET,
+    verb: METHOD_VERBS.GET,
     propName: PROP_NAMES.CURRENCIES
   },
   GET_CATEGORIES: {
     endpoint: 'get_categories',
     methodName: 'getCategories',
-    method: METHOD_TYPES.GET,
+    verb: METHOD_VERBS.GET,
     propName: PROP_NAMES.CATEGORIES
   },
   PARSE_SENTENCE: {
     endpoint: 'parse_sentence',
     methodName: 'parseSentence',
-    method: METHOD_TYPES.POST,
+    verb: METHOD_VERBS.POST,
     paramNames: ['input', 'group_id', 'friend_id', 'autosave']
   },
   GET_CURRENT_USER: {
     endpoint: 'get_current_user',
     methodName: 'getCurrentUser',
-    method: METHOD_TYPES.GET,
+    verb: METHOD_VERBS.GET,
     propName: PROP_NAMES.USER
   },
   GET_USER: {
     endpoint: 'get_user',
     methodName: 'getUser',
-    method: METHOD_TYPES.GET,
+    verb: METHOD_VERBS.GET,
     propName: PROP_NAMES.USER,
     idParamName: ID_PARAM_NAMES.USER
   },
   UPDATE_USER: {
     endpoint: 'update_user',
     methodName: 'updateUser',
-    method: METHOD_TYPES.PUT,
+    verb: METHOD_VERBS.PUT,
     propName: PROP_NAMES.USER,
     idParamName: ID_PARAM_NAMES.USER,
     paramNames: [
@@ -85,45 +85,45 @@ const METHODS = {
   GET_GROUPS: {
     endpoint: 'get_groups',
     methodName: 'getGroups',
-    method: METHOD_TYPES.GET,
+    verb: METHOD_VERBS.GET,
     propName: PROP_NAMES.GROUPS
   },
   GET_GROUP: {
     endpoint: 'get_group',
     methodName: 'getGroup',
-    method: METHOD_TYPES.GET,
+    verb: METHOD_VERBS.GET,
     propName: PROP_NAMES.GROUP,
     idParamName: ID_PARAM_NAMES.GROUP
   },
   CREATE_GROUP: {
     endpoint: 'create_group',
     methodName: 'createGroup',
-    method: METHOD_TYPES.POST,
+    verb: METHOD_VERBS.POST,
     propName: PROP_NAMES.GROUP,
     paramNames: ['name', 'group_type', 'country_code', 'users']
   },
   DELETE_GROUP: {
     endpoint: 'delete_group',
     methodName: 'deleteGroup',
-    method: METHOD_TYPES.POST,
+    verb: METHOD_VERBS.POST,
     idParamName: PROP_NAMES.GROUP
   },
   ADD_USER_TO_GROUP: {
     endpoint: 'add_user_to_group',
     methodName: 'addUserToGroup',
-    method: METHOD_TYPES.POST,
+    verb: METHOD_VERBS.POST,
     paramNames: ['group_id', 'user_id', 'first_name', 'last_name', 'email']
   },
   REMOVE_USER_FROM_GROUP: {
     endpoint: 'remove_user_from_group',
     methodName: 'removeUserFromGroup',
-    method: METHOD_TYPES.POST,
+    verb: METHOD_VERBS.POST,
     paramNames: ['user_id', 'group_id']
   },
   GET_EXPENSES: {
     endpoint: 'get_expenses',
     methodName: 'getExpenses',
-    method: METHOD_TYPES.GET,
+    verb: METHOD_VERBS.GET,
     propName: PROP_NAMES.EXPENSES,
     paramNames: [
       'group_id',
@@ -139,14 +139,14 @@ const METHODS = {
   GET_EXPENSE: {
     endpoint: 'get_expense',
     methodName: 'getExpense',
-    method: METHOD_TYPES.GET,
+    verb: METHOD_VERBS.GET,
     propName: PROP_NAMES.EXPENSE,
     idParamName: ID_PARAM_NAMES.EXPENSE
   },
   CREATE_EXPENSE: {
     endpoint: 'create_expense',
     methodName: 'createExpense',
-    method: METHOD_TYPES.POST,
+    verb: METHOD_VERBS.POST,
     propName: PROP_NAMES.EXPENSES,
     paramNames: [
       'payment',
@@ -166,7 +166,7 @@ const METHODS = {
   UPDATE_EXPENSE: {
     endpoint: 'update_expense',
     methodName: 'updateExpense',
-    method: METHOD_TYPES.POST,
+    verb: METHOD_VERBS.POST,
     propName: PROP_NAMES.EXPENSES,
     idParamName: ID_PARAM_NAMES.EXPENSE,
     paramNames: [
@@ -185,53 +185,53 @@ const METHODS = {
   DELETE_EXPENSE: {
     endpoint: 'delete_expense',
     methodName: 'deleteExpense',
-    method: METHOD_TYPES.POST,
+    verb: METHOD_VERBS.POST,
     idParamName: ID_PARAM_NAMES.EXPENSE
   },
   GET_FRIENDS: {
     endpoint: 'get_friends',
     methodName: 'getFriends',
-    method: METHOD_TYPES.GET,
+    verb: METHOD_VERBS.GET,
     propName: PROP_NAMES.FRIENDS
   },
   GET_FRIEND: {
     endpoint: 'get_friend',
     methodName: 'getFriend',
-    method: METHOD_TYPES.GET,
+    verb: METHOD_VERBS.GET,
     propName: PROP_NAMES.FRIEND,
     idParamName: ID_PARAM_NAMES.FRIEND
   },
   CREATE_FRIEND: {
     endpoint: 'create_friend',
     methodName: 'createFriend',
-    method: METHOD_TYPES.POST,
+    verb: METHOD_VERBS.POST,
     propName: PROP_NAMES.FRIENDS,
     paramNames: ['user_email', 'user_first_name', 'user_last_name']
   },
   CREATE_FRIENDS: {
     endpoint: 'create_friends',
     methodName: 'createFriends',
-    method: METHOD_TYPES.POST,
+    verb: METHOD_VERBS.POST,
     propName: PROP_NAMES.FRIENDS,
     paramNames: ['friends']
   },
   DELETE_FRIEND: {
     endpoint: 'delete_friend',
     methodName: 'deleteFriend',
-    method: METHOD_TYPES.DELETE,
+    verb: METHOD_VERBS.DELETE,
     idParamName: ID_PARAM_NAMES.FRIEND
   },
   GET_NOTIFICATIONS: {
     endpoint: 'get_notifications',
     methodName: 'getNotifications',
-    method: METHOD_TYPES.GET,
+    verb: METHOD_VERBS.GET,
     propName: PROP_NAMES.NOTIFICATIONS,
     paramNames: ['updated_after', 'limit']
   },
   GET_MAIN_DATA: {
     endpoint: 'get_main_data',
     methodName: 'getMainData',
-    method: METHOD_TYPES.GET,
+    verb: METHOD_VERBS.GET,
     paramNames: ['no_expenses', 'limit', 'cachebust']
   }
 }
@@ -314,10 +314,10 @@ class Splitwise {
     })
   }
 
-  oAuthRequestWrapper (url, method, postData, token) {
-    // if (method not in METHOD_TYPES) ...
+  oAuthRequestWrapper (url, verb, postData, token) {
+    // if (verb not in METHOD_VERBS) ...
     return this.oAuthRequest(
-      method,
+      verb,
       url,
       {
         'Content-Type': 'application/x-www-form-urlencoded',
@@ -333,18 +333,18 @@ class Splitwise {
       this.oAuthGet(`${API_URL}${endpoint}`, token).then(JSON.parse)
   }
 
-  splitwiseRequestWithData (endpoint, method, data) {
+  splitwiseRequestWithData (endpoint, verb, data) {
     return token =>
       this.oAuthRequestWrapper(
         `${API_URL}${endpoint}`,
-        method,
+        verb,
         splitwisifyParameters(data),
         token
       ).then(JSON.parse)
   }
 
   methodWrapper ({
-    method,
+    verb,
     endpoint,
     propName,
     methodName,
@@ -352,8 +352,8 @@ class Splitwise {
     paramNames = []
   }) {
     // if (!endpoint) ...
-    // if (!method) ...
-    // if (method !== 'GET' && paramNames.length > 0) ...
+    // if (!verb) ...
+    // if (verb !== 'GET' && paramNames.length > 0) ...
     const wrapped = (params = {}, callback) => {
       let id = ''
       if (idParamName) {
@@ -368,7 +368,7 @@ class Splitwise {
       let url = `${endpoint}/${id}`
       let resultPromise
 
-      if (method === 'GET') {
+      if (verb === 'GET') {
         const queryParams = querystring.stringify(R.pick(paramNames, params))
 
         if (queryParams) {
@@ -380,7 +380,7 @@ class Splitwise {
         resultPromise = this.tokenPromise.then(
           this.splitwiseRequestWithData(
             url,
-            method,
+            verb,
             R.pick(paramNames, params)
           )
         )
