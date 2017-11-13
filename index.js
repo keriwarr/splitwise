@@ -1,9 +1,9 @@
-const { OAuth2 } = require('oauth');
-const querystring = require('querystring');
-const { promisify } = require('util');
-const R = require('ramda');
+const { OAuth2 } = require('oauth')
+const querystring = require('querystring')
+const { promisify } = require('util')
+const R = require('ramda')
 
-const API_URL = 'https://secure.splitwise.com/api/v3.0/';
+const API_URL = 'https://secure.splitwise.com/api/v3.0/'
 
 const PROP_NAMES = {
   CURRENCIES: 'currencies',
@@ -15,54 +15,54 @@ const PROP_NAMES = {
   EXPENSE: 'expense',
   FRIENDS: 'friends',
   FRIEND: 'friend',
-  NOTIFICATIONS: 'notifications',
-};
+  NOTIFICATIONS: 'notifications'
+}
 
 const ID_PARAM_NAMES = {
   USER: 'userID',
   GROUP: 'groupID',
   EXPENSE: 'expenseID',
-  FRIEND: 'friendID',
-};
+  FRIEND: 'friendID'
+}
 
 const METHOD_TYPES = {
   GET: 'GET',
   POST: 'POST',
   PUT: 'PUT',
-  DELETE: 'DELETE',
-};
+  DELETE: 'DELETE'
+}
 
 const METHODS = {
   GET_CURRENCIES: {
     endpoint: 'get_currencies',
     methodName: 'getCurrencies',
     method: METHOD_TYPES.GET,
-    propName: PROP_NAMES.CURRENCIES,
+    propName: PROP_NAMES.CURRENCIES
   },
   GET_CATEGORIES: {
     endpoint: 'get_categories',
     methodName: 'getCategories',
     method: METHOD_TYPES.GET,
-    propName: PROP_NAMES.CATEGORIES,
+    propName: PROP_NAMES.CATEGORIES
   },
   PARSE_SENTENCE: {
     endpoint: 'parse_sentence',
     methodName: 'parseSentence',
     method: METHOD_TYPES.POST,
-    paramNames: ['input', 'group_id', 'friend_id', 'autosave'],
+    paramNames: ['input', 'group_id', 'friend_id', 'autosave']
   },
   GET_CURRENT_USER: {
     endpoint: 'get_current_user',
     methodName: 'getCurrentUser',
     method: METHOD_TYPES.GET,
-    propName: PROP_NAMES.USER,
+    propName: PROP_NAMES.USER
   },
   GET_USER: {
     endpoint: 'get_user',
     methodName: 'getUser',
     method: METHOD_TYPES.GET,
     propName: PROP_NAMES.USER,
-    idParamName: ID_PARAM_NAMES.USER,
+    idParamName: ID_PARAM_NAMES.USER
   },
   UPDATE_USER: {
     endpoint: 'update_user',
@@ -79,46 +79,46 @@ const METHODS = {
       'date_format',
       'default_currency',
       'default_group_id',
-      'notification_settings',
-    ],
+      'notification_settings'
+    ]
   },
   GET_GROUPS: {
     endpoint: 'get_groups',
     methodName: 'getGroups',
     method: METHOD_TYPES.GET,
-    propName: PROP_NAMES.GROUPS,
+    propName: PROP_NAMES.GROUPS
   },
   GET_GROUP: {
     endpoint: 'get_group',
     methodName: 'getGroup',
     method: METHOD_TYPES.GET,
     propName: PROP_NAMES.GROUP,
-    idParamName: ID_PARAM_NAMES.GROUP,
+    idParamName: ID_PARAM_NAMES.GROUP
   },
   CREATE_GROUP: {
     endpoint: 'create_group',
     methodName: 'createGroup',
     method: METHOD_TYPES.POST,
     propName: PROP_NAMES.GROUP,
-    paramNames: ['name', 'group_type', 'country_code', 'users'],
+    paramNames: ['name', 'group_type', 'country_code', 'users']
   },
   DELETE_GROUP: {
     endpoint: 'delete_group',
     methodName: 'deleteGroup',
     method: METHOD_TYPES.POST,
-    idParamName: PROP_NAMES.GROUP,
+    idParamName: PROP_NAMES.GROUP
   },
   ADD_USER_TO_GROUP: {
     endpoint: 'add_user_to_group',
     methodName: 'addUserToGroup',
     method: METHOD_TYPES.POST,
-    paramNames: ['group_id', 'user_id', 'first_name', 'last_name', 'email'],
+    paramNames: ['group_id', 'user_id', 'first_name', 'last_name', 'email']
   },
   REMOVE_USER_FROM_GROUP: {
     endpoint: 'remove_user_from_group',
     methodName: 'removeUserFromGroup',
     method: METHOD_TYPES.POST,
-    paramNames: ['user_id', 'group_id'],
+    paramNames: ['user_id', 'group_id']
   },
   GET_EXPENSES: {
     endpoint: 'get_expenses',
@@ -133,15 +133,15 @@ const METHODS = {
       'updated_after',
       'updated_before',
       'limit',
-      'offset',
-    ],
+      'offset'
+    ]
   },
   GET_EXPENSE: {
     endpoint: 'get_expense',
     methodName: 'getExpense',
     method: METHOD_TYPES.GET,
     propName: PROP_NAMES.EXPENSE,
-    idParamName: ID_PARAM_NAMES.EXPENSE,
+    idParamName: ID_PARAM_NAMES.EXPENSE
   },
   CREATE_EXPENSE: {
     endpoint: 'create_expense',
@@ -160,8 +160,8 @@ const METHODS = {
       'repeat_interval',
       'currency_code',
       'category_id',
-      'users',
-    ],
+      'users'
+    ]
   },
   UPDATE_EXPENSE: {
     endpoint: 'update_expense',
@@ -179,113 +179,113 @@ const METHODS = {
       'cost',
       'date',
       'category_id',
-      'users',
-    ],
+      'users'
+    ]
   },
   DELETE_EXPENSE: {
     endpoint: 'delete_expense',
     methodName: 'deleteExpense',
     method: METHOD_TYPES.POST,
-    idParamName: ID_PARAM_NAMES.EXPENSE,
+    idParamName: ID_PARAM_NAMES.EXPENSE
   },
   GET_FRIENDS: {
     endpoint: 'get_friends',
     methodName: 'getFriends',
     method: METHOD_TYPES.GET,
-    propName: PROP_NAMES.FRIENDS,
+    propName: PROP_NAMES.FRIENDS
   },
   GET_FRIEND: {
     endpoint: 'get_friend',
     methodName: 'getFriend',
     method: METHOD_TYPES.GET,
     propName: PROP_NAMES.FRIEND,
-    idParamName: ID_PARAM_NAMES.FRIEND,
+    idParamName: ID_PARAM_NAMES.FRIEND
   },
   CREATE_FRIEND: {
     endpoint: 'create_friend',
     methodName: 'createFriend',
     method: METHOD_TYPES.POST,
     propName: PROP_NAMES.FRIENDS,
-    paramNames: ['user_email', 'user_first_name', 'user_last_name'],
+    paramNames: ['user_email', 'user_first_name', 'user_last_name']
   },
   CREATE_FRIENDS: {
     endpoint: 'create_friends',
     methodName: 'createFriends',
     method: METHOD_TYPES.POST,
     propName: PROP_NAMES.FRIENDS,
-    paramNames: ['friends'],
+    paramNames: ['friends']
   },
   DELETE_FRIEND: {
     endpoint: 'delete_friend',
     methodName: 'deleteFriend',
     method: METHOD_TYPES.DELETE,
-    idParamName: ID_PARAM_NAMES.FRIEND,
+    idParamName: ID_PARAM_NAMES.FRIEND
   },
   GET_NOTIFICATIONS: {
     endpoint: 'get_notifications',
     methodName: 'getNotifications',
     method: METHOD_TYPES.GET,
     propName: PROP_NAMES.NOTIFICATIONS,
-    paramNames: ['updated_after', 'limit'],
+    paramNames: ['updated_after', 'limit']
   },
   GET_MAIN_DATA: {
     endpoint: 'get_main_data',
     methodName: 'getMainData',
     method: METHOD_TYPES.GET,
-    paramNames: ['no_expenses', 'limit', 'cachebust'],
-  },
-};
+    paramNames: ['no_expenses', 'limit', 'cachebust']
+  }
+}
 
 const convertBooleans = R.map(val => {
-  if (val === true) return 1;
-  if (val === false) return 0;
-  return val;
-});
+  if (val === true) return 1
+  if (val === false) return 0
+  return val
+})
 
 const unnestParameters = params => {
-  const type = R.type(params);
+  const type = R.type(params)
   if (type !== 'Array' && type !== 'Object') {
-    return params;
+    return params
   }
 
-  const pairs = Object.entries(params);
+  const pairs = Object.entries(params)
 
   const recursedPairs = pairs.map(([key, value]) => [
     key,
-    unnestParameters(value),
-  ]);
+    unnestParameters(value)
+  ])
 
   const flattenedPairs = recursedPairs.map(
     ([key, value]) =>
       R.type(value) === 'Object'
         ? R.compose(
-            R.fromPairs,
-            R.map(([subKey, subValue]) => [`${key}__${subKey}`, subValue]),
-            R.toPairs,
-          )(value)
-        : { [key]: value },
-  );
+          R.fromPairs,
+          R.map(([subKey, subValue]) => [`${key}__${subKey}`, subValue]),
+          R.toPairs
+        )(value)
+        : { [key]: value }
+  )
 
-  return R.mergeAll(flattenedPairs);
-};
+  return R.mergeAll(flattenedPairs)
+}
 
-const splitwisifyParameters = R.compose(convertBooleans, unnestParameters);
+const splitwisifyParameters = R.compose(convertBooleans, unnestParameters)
 
 class Splitwise {
-  constructor({
+  constructor ({
     consumerKey,
     consumerSecret,
     groupID,
     userID,
     expenseID,
-    friendID,
+    friendID
   }) {
-    this.consumerKey = consumerKey;
-    this.consumerSecret = consumerSecret;
-    this.groupID = groupID;
-    this.userID = userID;
-    this.expenseID = expenseID;
-    this.friendID = friendID;
+    this.consumerKey = consumerKey
+    this.consumerSecret = consumerSecret
+    this.groupID = groupID
+    this.userID = userID
+    this.expenseID = expenseID
+    this.friendID = friendID
 
     this.oauth2 = new OAuth2(
       consumerKey,
@@ -293,120 +293,120 @@ class Splitwise {
       'https://secure.splitwise.com/',
       null,
       'oauth/token',
-      null,
-    );
+      null
+    )
 
     this.getOAuthAccessToken = promisify(
       this.oauth2.getOAuthAccessToken.bind(this.oauth2, '', {
-        grant_type: 'client_credentials',
-      }),
-    );
+        grant_type: 'client_credentials'
+      })
+    )
 
-    this.oAuthGet = promisify(this.oauth2.get.bind(this.oauth2));
+    this.oAuthGet = promisify(this.oauth2.get.bind(this.oauth2))
 
     // eslint-disable-next-line no-underscore-dangle
-    this.oAuthRequest = promisify(this.oauth2._request.bind(this.oauth2));
+    this.oAuthRequest = promisify(this.oauth2._request.bind(this.oauth2))
 
-    this.tokenPromise = this.getOAuthAccessToken();
+    this.tokenPromise = this.getOAuthAccessToken()
 
     Object.values(METHODS).forEach(method => {
-      this[method.methodName] = this.methodWrapper(method);
-    });
+      this[method.methodName] = this.methodWrapper(method)
+    })
   }
 
-  oAuthRequestWrapper(url, method, postData, token) {
+  oAuthRequestWrapper (url, method, postData, token) {
     // if (method not in METHOD_TYPES) ...
     return this.oAuthRequest(
       method,
       url,
       {
         'Content-Type': 'application/x-www-form-urlencoded',
-        Authorization: this.oauth2.buildAuthHeader(token),
+        Authorization: this.oauth2.buildAuthHeader(token)
       },
       querystring.stringify(postData),
-      null,
-    );
+      null
+    )
   }
 
-  splitwiseRequest(endpoint) {
+  splitwiseRequest (endpoint) {
     return token =>
-      this.oAuthGet(`${API_URL}${endpoint}`, token).then(JSON.parse);
+      this.oAuthGet(`${API_URL}${endpoint}`, token).then(JSON.parse)
   }
 
-  splitwiseRequestWithData(endpoint, method, data) {
+  splitwiseRequestWithData (endpoint, method, data) {
     return token =>
       this.oAuthRequestWrapper(
         `${API_URL}${endpoint}`,
         method,
         splitwisifyParameters(data),
-        token,
-      ).then(JSON.parse);
+        token
+      ).then(JSON.parse)
   }
 
-  methodWrapper({
+  methodWrapper ({
     method,
     endpoint,
     propName,
     methodName,
     idParamName,
-    paramNames = [],
+    paramNames = []
   }) {
     // if (!endpoint) ...
     // if (!method) ...
     // if (method !== 'GET' && paramNames.length > 0) ...
     const wrapped = (params = {}, callback) => {
-      let id = '';
+      let id = ''
       if (idParamName) {
-        id = params.id || params[idParamName] || this[idParamName];
+        id = params.id || params[idParamName] || this[idParamName]
         if (!id) {
-          const error = new Error(`must provide id parameter`);
-          if (callback) callback(error, null);
-          return Promise.reject(error);
+          const error = new Error(`must provide id parameter`)
+          if (callback) callback(error, null)
+          return Promise.reject(error)
         }
       }
 
-      let url = `${endpoint}/${id}`;
-      let resultPromise;
+      let url = `${endpoint}/${id}`
+      let resultPromise
 
       if (method === 'GET') {
-        const queryParams = querystring.stringify(R.pick(paramNames, params));
+        const queryParams = querystring.stringify(R.pick(paramNames, params))
 
         if (queryParams) {
-          url = `${url}?${queryParams}`;
+          url = `${url}?${queryParams}`
         }
 
-        resultPromise = this.tokenPromise.then(this.splitwiseRequest(url));
+        resultPromise = this.tokenPromise.then(this.splitwiseRequest(url))
       } else {
         resultPromise = this.tokenPromise.then(
           this.splitwiseRequestWithData(
             url,
             method,
-            R.pick(paramNames, params),
-          ),
-        );
+            R.pick(paramNames, params)
+          )
+        )
       }
 
       if (propName) {
-        resultPromise = resultPromise.then(R.prop(propName));
+        resultPromise = resultPromise.then(R.prop(propName))
       }
 
       if (callback) {
         resultPromise.then(
           result => callback(null, result),
-          error => callback(error, null),
-        );
+          error => callback(error, null)
+        )
       }
-      return resultPromise;
-    };
+      return resultPromise
+    }
 
     Object.defineProperty(wrapped, 'name', {
       value: methodName,
-      writable: false,
-    });
-    return wrapped;
+      writable: false
+    })
+    return wrapped
   }
 
-  createDebt({ from, to, amount, description, groupID }) {
+  createDebt ({ from, to, amount, description, groupID }) {
     return this.createExpense({
       description,
       groupID,
@@ -415,16 +415,16 @@ class Splitwise {
       users: [
         {
           user_id: from,
-          paid_share: amount,
+          paid_share: amount
         },
         {
           user_id: to,
-          owed_share: amount,
-        },
-      ],
-    });
+          owed_share: amount
+        }
+      ]
+    })
   }
 }
 
-exports.Splitwise = Splitwise;
-exports.default = Splitwise;
+exports.Splitwise = Splitwise
+exports.default = Splitwise
