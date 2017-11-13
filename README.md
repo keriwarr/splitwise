@@ -1,29 +1,29 @@
 # splitwise
 
-A JavaScript wrapper library/SDK for the [Splitwise API](http://http://dev.splitwise.com/).
-
-Created by [Keri Warr](https://keri.warr.ca) because he 💖s Splitwise.
-
-## Requirements
-
-Node version `>=6.0.0`
+A JavaScript SDK for the [Splitwise API](http://dev.splitwise.com/).
 
 ## Quickstart
 
-### Step 1:
+### Step 1: Register your Application
 
-Register your splitwise application [here](https://secure.splitwise.com/oauth_clients) to get a consumer key and a consumer secret.
+You will need a consumer key and a consumer secret from Splitwise to use this module. Get them here: https://secure.splitwise.com/oauth_clients.
 
-### Step 2:
+### Step 2: Install
 
+This module works with Node.js, version `6` or newer. To install, run:
+
+```shell
+ $ yarn add splitwise
+```
+OR
 ```shell
  $ npm install --save splitwise
 ```
 
-### Step 3:
+### Step 3: Basic Example
 
 ```javascript
-const { Splitwise } = require('splitwise')
+const Splitwise = require('splitwise')
 const sw = new Splitwise({
   consumerKey: 'your key here',
   consumerSecret: 'your secret here'
@@ -32,12 +32,12 @@ const sw = new Splitwise({
 sw.getCurrentUser().then(console.log)
 ```
 
-## Non-trivial example
+## Non-trivial Example
 
 In this example, we create a new expense from the current user, to the first listed user in the given group, with the same description as the first given expense.
 
 ```javascript
-const { Splitwise } = require('splitwise')
+const Splitwise = require('splitwise')
 const sw = new Splitwise({
   consumerKey: 'your key here',
   consumerSecret: 'your secret here'
@@ -76,7 +76,7 @@ const sw = new Splitwise({
 sw.getGroup().then(console.log);
 ```
 
-### Wrapper methods
+### Wrapper Methods
 
 For any of the API methods documented on Splitwise's website, you can use it by calling the camelcase named version of the endpoint on the splitwise object (i.e. `remove_user_from_group` becomes `sw.removeUserFromGroup()`).
 
@@ -125,8 +125,10 @@ sw.createDebt({
 
 ## Notes
 
+Here is an alternative to this package: https://github.com/Dean177/splitwise-node
+
 This package came about after I wrote a [blog post](https://keri.warr.ca/2017/10/30/using-the-splitwise-api-from-node/) about using this API.
 
 ## License
 
-This package is MIT licensed.
+[MIT](https://github.com/keriwarr/splitwise/blob/master/LICENSE)

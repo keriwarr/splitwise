@@ -426,5 +426,5 @@ class Splitwise {
   }
 }
 
-exports.Splitwise = Splitwise
-exports.default = Splitwise
+exports = Splitwise
+exports = Splitwise

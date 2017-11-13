@@ -1,7 +1,7 @@
 {
   "name": "splitwise",
   "version": "0.4.0",
-  "description": "Wrapper library for the Splitwise API",
+  "description": "A JavaScript SDK for the Splitwise API.",
   "main": "index.js",
   "repository": {
     "type": "git",
