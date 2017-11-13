@@ -4,15 +4,15 @@ A JavaScript wrapper library/SDK for the [Splitwise API](http://http://dev.split
 
 Created by [Keri Warr](https://keri.warr.ca) because he 💖s Splitwise.
 
-## Usage
+## Requirements
 
-This package can be used with Node with version at least `6.0.0`.
+Node version `>=6.0.0`
 
 ## Quickstart
 
 ### Step 1:
 
-Register your splitwise application [here](https://secure.splitwise.com/oauth_clients) to get a client key and a client secret.
+Register your splitwise application [here](https://secure.splitwise.com/oauth_clients) to get a consumer key and a consumer secret.
 
 ### Step 2:
 
@@ -25,8 +25,8 @@ Register your splitwise application [here](https://secure.splitwise.com/oauth_cl
 ```javascript
 const { Splitwise } = require('splitwise')
 const sw = new Splitwise({
-  clientKey: 'your key here',
-  clientSecret: 'your secret here'
+  consumerKey: 'your key here',
+  consumerSecret: 'your secret here'
 })
 
 sw.getCurrentUser().then(console.log)
@@ -59,11 +59,11 @@ Promise.all([
 
 ## Documentation
 
-In order to know which parameters must or can be passed in to various methods, please refer to the original API documentation: http://dev.splitwise.com/dokuwiki/doku.php.
+In order to know which parameters must or can be passed into various methods, please refer to the original API documentation: http://dev.splitwise.com/dokuwiki/doku.php.
 
 ### `new Splitwise(options)`
 
-To the constructor you must pass in a `consumerKey` and a `consumerSecret`.
+To the constructor, you must pass in a `consumerKey` and a `consumerSecret`.
 
 You may optionally pass in the following parameters: `groupID`, `userID`, `expenseID`, and `friendID`. They will be used by default for basic CRUD operations if you do not specify an ID. For example:
 
@@ -78,7 +78,7 @@ sw.getGroup().then(console.log);
 
 ### Wrapper methods
 
-For any of the API methods documented on Splitwise's website, you can use it by calling the camelcase named version of the endpiont on the splitwise object (i.e. `remove_user_from_group` becomes `sw.removeUserFromGroup()`).
+For any of the API methods documented on Splitwise's website, you can use it by calling the camelcase named version of the endpoint on the splitwise object (i.e. `remove_user_from_group` becomes `sw.removeUserFromGroup()`).
 
 For some group methods such as `getGroup` you must pass in a groupID:
 
@@ -88,7 +88,7 @@ sw.getGroup({ groupID: '12345678' }).then();
 
 For some expense methods, user methods, and friend methods, you must do the same.
 
-Splitwise makes some important notes about their API that booleans, and nested parameters don't work. You don't need to worry about this. Instead of calling:
+Splitwise makes some important notes about their API that booleans and nested parameters don't work. You don't need to worry about this. Instead of calling:
 
 ```javascript
 sw.createExpense({
@@ -112,7 +112,7 @@ And on that note...
 
 ### `sw.createDebt()`
 
-The params that must be passed in to the `create_expense` endpoint are a little obtuse, so there is provided this hepler method which can be used as follows:
+The params that must be passed into the `create_expense` endpoint are a little obtuse, so there is provided this helper method which can be used as follows:
 
 ```javascript
 sw.createDebt({
