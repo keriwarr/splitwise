@@ -33,6 +33,11 @@ const METHOD_VERBS = {
 }
 
 const METHODS = {
+  TEST: {
+    endpoint: 'test',
+    methodName: 'test',
+    verb: METHOD_VERBS.GET
+  },
   GET_CURRENCIES: {
     endpoint: 'get_currencies',
     methodName: 'getCurrencies',
@@ -387,7 +392,7 @@ class Splitwise {
       }
 
       if (propName) {
-        resultPromise = resultPromise.then(R.prop(propName))
+        resultPromise = resultPromise.then(val => R.propOr(val, propName, val))
       }
 
       if (callback) {
