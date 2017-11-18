@@ -23,7 +23,7 @@ OR
 ### Step 3: Basic Example
 
 ```javascript
-const Splitwise = require('splitwise')
+const { Splitwise } = require('splitwise')
 const sw = new Splitwise({
   consumerKey: 'your key here',
   consumerSecret: 'your secret here'
@@ -37,7 +37,7 @@ sw.getCurrentUser().then(console.log)
 In this example, we create a new expense from the current user, to the first listed user in the given group, with the same description as the first given expense.
 
 ```javascript
-const Splitwise = require('splitwise')
+const { Splitwise } = require('splitwise')
 const sw = new Splitwise({
   consumerKey: 'your key here',
   consumerSecret: 'your secret here'
