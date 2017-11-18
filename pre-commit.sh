@@ -8,8 +8,8 @@ function xargs-r() {
     { echo -n "$path"; echo -ne "\0"; cat; } | xargs $@
   fi
 }
-git diff -z --name-only --cached --relative | grep -a --null '\.jsx\?$' | xargs -0 standard-markdown
-git diff -z --name-only --cached --relative | grep -a --null '\.jsx\?$' | xargs -0 standard
+git diff --name-only --cached --relative | grep -a '\.jsx\?$' | xargs-r standard-markdown
+git diff --name-only --cached --relative | grep -a '\.jsx\?$' | xargs-r standard
 if [[ $? -ne 0 ]]; then
   echo 'JavaScript Standard Style errors were detected. Aborting commit.'
   exit 1

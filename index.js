@@ -276,6 +276,11 @@ const unnestParameters = params => {
 
 const splitwisifyParameters = R.compose(convertBooleans, unnestParameters)
 
+const LOG_LEVELS = {
+  INFO: 'Info',
+  ERROR: 'Error'
+}
+
 class Splitwise {
   constructor ({
     consumerKey,
@@ -283,7 +288,8 @@ class Splitwise {
     groupID,
     userID,
     expenseID,
-    friendID
+    friendID,
+    logger
   }) {
     this.consumerKey = consumerKey
     this.consumerSecret = consumerSecret
@@ -291,6 +297,21 @@ class Splitwise {
     this.userID = userID
     this.expenseID = expenseID
     this.friendID = friendID
+    this.logger = logger ? ({ level = LOG_LEVELS.INFO, message }) => {
+      if (level === LOG_LEVELS.INFO && logger.info) {
+        logger.info(message)
+      } else if (level === LOG_LEVELS.ERROR && logger.error) {
+        logger.error(message)
+      } else {
+        logger(`${level}: ${message}`)
+      }
+    } : () => { }
+
+    if (!this.consumerKey || !this.consumerSecret) {
+      const message = 'both a consumer key, and a consumer secret must be provided'
+      this.logger({ level: LOG_LEVELS.ERROR, message })
+      throw new Error(message)
+    }
 
     this.oauth2 = new OAuth2(
       consumerKey,
@@ -312,7 +333,35 @@ class Splitwise {
     // eslint-disable-next-line no-underscore-dangle
     this.oAuthRequest = promisify(this.oauth2._request.bind(this.oauth2))
 
-    this.tokenPromise = this.getOAuthAccessToken()
+    this.logger({message: 'making request for access token'})
+    this.tokenPromise = this.getOAuthAccessToken().then(token => {
+      this.logger({message: 'successfully aquired access token'})
+      return token
+    }).catch(error => {
+      console.log(error, error.data, error.data.error)
+      const reason = (() => {
+        let data
+        if (error && error.data) {
+          try {
+            data = JSON.parse(error.data)
+          } catch (e) { }
+        }
+
+        if (data && data.error === 'invalid_client') {
+          return 'your credentials are incorrect'
+        }
+        if (error && error.statusCode >= 400 && error.statusCode < 500) {
+          return 'client error'
+        }
+        if (error && error.statusCode >= 500 && error.statusCode < 600) {
+          return 'server error'
+        }
+        return 'unknown error'
+      })()
+      const message = `authentication failed - ${reason}`
+      this.logger({ level: LOG_LEVELS.ERROR, message })
+      return Promise.reject(new Error(message))
+    })
 
     R.values(METHODS).forEach(method => {
       this[method.methodName] = this.methodWrapper(method)
@@ -320,7 +369,22 @@ class Splitwise {
   }
 
   oAuthRequestWrapper (url, verb, postData, token) {
-    // if (verb not in METHOD_VERBS) ...
+    if (!url) {
+      const message = 'oAuthRequestWrapper - a URL must be provided'
+      this.logger({level: LOG_LEVELS.ERROR, message})
+      return Promise.reject(new Error(message))
+    }
+    if (!METHOD_VERBS[verb]) {
+      const message = 'oAuthRequestWrapper - unknown http verb'
+      this.logger({level: LOG_LEVELS.ERROR, message})
+      return Promise.reject(new Error(message))
+    }
+    if (!token) {
+      const message = 'oAuthRequestWrapper - a token must be provided'
+      this.logger({level: LOG_LEVELS.ERROR, message})
+      return Promise.reject(new Error(message))
+    }
+
     return this.oAuthRequest(
       verb,
       url,
@@ -334,11 +398,28 @@ class Splitwise {
   }
 
   splitwiseRequest (endpoint) {
+    if (!endpoint) {
+      const message = 'splitwiseRequest - an endpoint must be specified'
+      this.logger({level: LOG_LEVELS.ERROR, message})
+      return Promise.reject(new Error(message))
+    }
+
     return token =>
       this.oAuthGet(`${API_URL}${endpoint}`, token).then(JSON.parse)
   }
 
   splitwiseRequestWithData (endpoint, verb, data) {
+    if (!endpoint) {
+      const message = 'splitwiseRequestWithData - an endpoint must be specified'
+      this.logger({level: LOG_LEVELS.ERROR, message})
+      return Promise.reject(new Error(message))
+    }
+    if (!data) {
+      const message = 'splitwiseRequestWithData - data must be provided'
+      this.logger({level: LOG_LEVELS.ERROR, message})
+      return Promise.reject(new Error(message))
+    }
+
     return token =>
       this.oAuthRequestWrapper(
         `${API_URL}${endpoint}`,
@@ -356,33 +437,52 @@ class Splitwise {
     idParamName,
     paramNames = []
   }) {
-    // if (!endpoint) ...
-    // if (!verb) ...
-    // if (verb !== 'GET' && paramNames.length > 0) ...
+    if (!endpoint) {
+      const message = 'methodWrapper - an endpoint must be specified'
+      this.logger({level: LOG_LEVELS.ERROR, message})
+      throw new Error(message)
+    }
+    if (!METHOD_VERBS[verb]) {
+      const message = 'methodWrapper - unknown http verb'
+      this.logger({level: LOG_LEVELS.ERROR, message})
+      throw new Error(message)
+    }
+    if (!methodName) {
+      const message = 'methodWrapper - a method name must be provided'
+      this.logger({level: LOG_LEVELS.ERROR, message})
+      throw new Error(message)
+    }
+
     const wrapped = (params = {}, callback) => {
       let id = ''
       if (idParamName) {
         id = params.id || params[idParamName] || this[idParamName]
         if (!id) {
-          const error = new Error(`must provide id parameter`)
+          const message = `${methodName} - must provide id parameter`
+          const error = new Error(message)
+          this.logger({level: LOG_LEVELS.ERROR, message})
           if (callback) callback(error, null)
           return Promise.reject(error)
         }
       }
 
       let url = `${endpoint}/${id}`
-      let resultPromise
+      let resultPromise = this.tokenPromise
 
-      if (verb === 'GET') {
+      resultPromise.then(() => {
+        this.logger({message: `${methodName} - making request`})
+      })
+
+      if (verb === METHOD_VERBS.GET) {
         const queryParams = querystring.stringify(R.pick(paramNames, params))
 
         if (queryParams) {
           url = `${url}?${queryParams}`
         }
 
-        resultPromise = this.tokenPromise.then(this.splitwiseRequest(url))
+        resultPromise = resultPromise.then(this.splitwiseRequest(url))
       } else {
-        resultPromise = this.tokenPromise.then(
+        resultPromise = resultPromise.then(
           this.splitwiseRequestWithData(
             url,
             verb,
@@ -391,16 +491,34 @@ class Splitwise {
         )
       }
 
+      resultPromise.then(() => {
+        this.logger({message: `${methodName} - successfully made request`})
+      })
+
       if (propName) {
         resultPromise = resultPromise.then(val => R.propOr(val, propName, val))
       }
 
+      resultPromise = resultPromise.catch(error => {
+        const reason = (error && error.message) || error || 'something went wrong'
+        const message = `${methodName} - ${reason}`
+        this.logger({ level: LOG_LEVELS.ERROR, message })
+        return Promise.reject(error)
+      })
+
       if (callback) {
         resultPromise.then(
-          result => callback(null, result),
-          error => callback(error, null)
+          result => {
+            callback(null, result)
+            return result
+          },
+          error => {
+            callback(error, null)
+            return Promise.reject(error)
+          }
         )
       }
+
       return resultPromise
     }
 
@@ -414,7 +532,7 @@ class Splitwise {
   createDebt ({ from, to, amount, description, groupID }) {
     return this.createExpense({
       description,
-      groupID,
+      groupID: groupID || this.groupID,
       payment: false,
       cost: amount,
       users: [
@@ -431,5 +549,5 @@ class Splitwise {
   }
 }
 
-exports = Splitwise
-exports = Splitwise
+exports.default = Splitwise
+exports.Splitwise = Splitwise
