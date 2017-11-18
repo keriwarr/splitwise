@@ -471,7 +471,7 @@ class Splitwise {
 
       resultPromise.then(() => {
         this.logger({message: `${methodName} - making request`})
-      })
+      }, () => {})
 
       if (verb === METHOD_VERBS.GET) {
         const queryParams = querystring.stringify(R.pick(paramNames, params))
@@ -493,14 +493,14 @@ class Splitwise {
 
       resultPromise.then(() => {
         this.logger({message: `${methodName} - successfully made request`})
-      })
+      }, () => {})
 
       if (propName) {
         resultPromise = resultPromise.then(val => R.propOr(val, propName, val))
       }
 
       resultPromise = resultPromise.catch(error => {
-        const reason = (error && error.message) || error || 'something went wrong'
+        const reason = (error && error.message) || JSON.stringify(error) || 'something went wrong'
         const message = `${methodName} - ${reason}`
         this.logger({ level: LOG_LEVELS.ERROR, message })
         return Promise.reject(error)
