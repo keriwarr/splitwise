@@ -33,7 +33,7 @@ const METHOD_VERBS = {
 }
 
 const METHODS = {
-  TEST: {
+  TEST: { // TODO: maybe just return a booL?
     endpoint: 'test',
     methodName: 'test',
     verb: METHOD_VERBS.GET
@@ -125,7 +125,7 @@ const METHODS = {
     verb: METHOD_VERBS.POST,
     paramNames: ['user_id', 'group_id']
   },
-  GET_EXPENSES: {
+  GET_EXPENSES: { // TODO: filter deleted, offer get deleted expenses method?
     endpoint: 'get_expenses',
     methodName: 'getExpenses',
     verb: METHOD_VERBS.GET,
@@ -148,7 +148,7 @@ const METHODS = {
     propName: PROP_NAMES.EXPENSE,
     idParamName: ID_PARAM_NAMES.EXPENSE
   },
-  CREATE_EXPENSE: {
+  CREATE_EXPENSE: { // TODO: return first expense? (returns array of expenses)
     endpoint: 'create_expense',
     methodName: 'createExpense',
     verb: METHOD_VERBS.POST,
@@ -220,7 +220,7 @@ const METHODS = {
     propName: PROP_NAMES.FRIENDS,
     paramNames: ['friends']
   },
-  DELETE_FRIEND: {
+  DELETE_FRIEND: { // TODO: maybe return ['success'] ?
     endpoint: 'delete_friend',
     methodName: 'deleteFriend',
     verb: METHOD_VERBS.DELETE,
@@ -239,6 +239,11 @@ const METHODS = {
     verb: METHOD_VERBS.GET,
     paramNames: ['no_expenses', 'limit', 'cachebust']
   }
+}
+
+const LOG_LEVELS = {
+  INFO: 'Info',
+  ERROR: 'Error'
 }
 
 const convertBooleans = R.map(val => {
@@ -276,19 +281,39 @@ const unnestParameters = params => {
 
 const splitwisifyParameters = R.compose(convertBooleans, unnestParameters)
 
-const LOG_LEVELS = {
-  INFO: 'Info',
-  ERROR: 'Error'
+const getSplitwiseErrors = error => {
+  if (!error) {
+    return []
+  }
+  if (typeof error === 'string' || error instanceof String) {
+    try {
+      return getSplitwiseErrors(JSON.parse(error))
+    } catch (e) {
+      return [error]
+    }
+  }
+  return [].concat.apply([],
+    [error.message, error.error, error.data]
+      .concat(
+        error.errors ? (Array.isArray(error.errors)
+          ? error.errors
+          : [].concat.apply([], Object.keys(error.errors).map(k => error.errors[k]))) : []
+      )
+      .map(getSplitwiseErrors)
+      .filter(e => !!e)
+  )
 }
 
 class Splitwise {
   constructor ({
     consumerKey,
     consumerSecret,
+    accessToken,
     groupID,
     userID,
     expenseID,
     friendID,
+    logLevel,
     logger
   }) {
     this.consumerKey = consumerKey
@@ -297,12 +322,13 @@ class Splitwise {
     this.userID = userID
     this.expenseID = expenseID
     this.friendID = friendID
+    this.logLevel = (logLevel && logLevel.toLowerCase() === 'error') ? LOG_LEVELS.ERROR : LOG_LEVELS.INFO
     this.logger = logger ? ({ level = LOG_LEVELS.INFO, message }) => {
-      if (level === LOG_LEVELS.INFO && logger.info) {
+      if (level === LOG_LEVELS.INFO && logger.info && this.logLevel !== LOG_LEVELS.ERROR) {
         logger.info(message)
       } else if (level === LOG_LEVELS.ERROR && logger.error) {
         logger.error(message)
-      } else {
+      } else if (level !== LOG_LEVELS.INFO || this.logLevel !== LOG_LEVELS.ERROR) {
         logger(`${level}: ${message}`)
       }
     } : () => { }
@@ -333,35 +359,39 @@ class Splitwise {
     // eslint-disable-next-line no-underscore-dangle
     this.oAuthRequest = promisify(this.oauth2._request.bind(this.oauth2))
 
-    this.logger({message: 'making request for access token'})
-    this.tokenPromise = this.getOAuthAccessToken().then(token => {
-      this.logger({message: 'successfully aquired access token'})
-      return token
-    }).catch(error => {
-      console.log(error, error.data, error.data.error)
-      const reason = (() => {
-        let data
-        if (error && error.data) {
-          try {
-            data = JSON.parse(error.data)
-          } catch (e) { }
-        }
+    if (accessToken) {
+      this.logger({message: 'using provided access token'})
+      this.tokenPromise = Promise.result(accessToken)
+    } else {
+      this.logger({message: 'making request for access token'})
+      this.tokenPromise = this.getOAuthAccessToken().then(token => {
+        this.logger({message: 'successfully aquired access token'})
+        return token
+      }).catch(error => {
+        const reason = (() => {
+          let data
+          if (error && error.data) {
+            try {
+              data = JSON.parse(error.data)
+            } catch (e) { }
+          }
 
-        if (data && data.error === 'invalid_client') {
-          return 'your credentials are incorrect'
-        }
-        if (error && error.statusCode >= 400 && error.statusCode < 500) {
-          return 'client error'
-        }
-        if (error && error.statusCode >= 500 && error.statusCode < 600) {
-          return 'server error'
-        }
-        return 'unknown error'
-      })()
-      const message = `authentication failed - ${reason}`
-      this.logger({ level: LOG_LEVELS.ERROR, message })
-      return Promise.reject(new Error(message))
-    })
+          if (data && data.error === 'invalid_client') {
+            return 'your credentials are incorrect'
+          }
+          if (error && error.statusCode >= 400 && error.statusCode < 500) {
+            return 'client error'
+          }
+          if (error && error.statusCode >= 500 && error.statusCode < 600) {
+            return 'server error'
+          }
+          return 'unknown error'
+        })()
+        const message = `authentication failed - ${reason}`
+        this.logger({ level: LOG_LEVELS.ERROR, message })
+        return Promise.reject(new Error(message))
+      })
+    }
 
     R.values(METHODS).forEach(method => {
       this[method.methodName] = this.methodWrapper(method)
@@ -491,6 +521,33 @@ class Splitwise {
         )
       }
 
+      resultPromise = resultPromise.then(result => {
+        const errors = getSplitwiseErrors(result)
+        let message
+        if (errors.length === 1) {
+          message = `${methodName} - ${errors[0]}`
+        } else if (errors.length > 1) {
+          message = `${methodName}:`
+          errors.forEach(e => { message += `\n - ${e}` })
+        }
+        if (message) {
+          this.logger({ level: LOG_LEVELS.ERROR, message })
+          return Promise.reject(new Error(message))
+        }
+        return result
+      }, error => {
+        const errors = getSplitwiseErrors(error)
+        let message = `${methodName} - something went wrong`
+        if (errors.length === 1) {
+          message = `${methodName} - ${errors[0]}`
+        } else if (errors.length > 1) {
+          message = `${methodName}:`
+          errors.forEach(e => { message += `\n - ${e}` })
+        }
+        this.logger({ level: LOG_LEVELS.ERROR, message })
+        return Promise.reject(new Error(message))
+      })
+
       resultPromise.then(() => {
         this.logger({message: `${methodName} - successfully made request`})
       }, () => {})
@@ -498,13 +555,6 @@ class Splitwise {
       if (propName) {
         resultPromise = resultPromise.then(val => R.propOr(val, propName, val))
       }
-
-      resultPromise = resultPromise.catch(error => {
-        const reason = (error && error.message) || JSON.stringify(error) || 'something went wrong'
-        const message = `${methodName} - ${reason}`
-        this.logger({ level: LOG_LEVELS.ERROR, message })
-        return Promise.reject(error)
-      })
 
       if (callback) {
         resultPromise.then(
@@ -527,6 +577,10 @@ class Splitwise {
       writable: false
     })
     return wrapped
+  }
+
+  getAccessToken () {
+    return this.tokenPromise
   }
 
   createDebt ({ from, to, amount, description, groupID }) {
