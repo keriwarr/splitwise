@@ -522,22 +522,25 @@ class Splitwise {
       }
 
       resultPromise = resultPromise.then(result => {
-        const errors = getSplitwiseErrors(result)
+        const errors = getSplitwiseErrors(R.pick(['error', 'errors'], result))
         let message
         if (errors.length === 1) {
           message = `${methodName} - ${errors[0]}`
         } else if (errors.length > 1) {
           message = `${methodName}:`
           errors.forEach(e => { message += `\n - ${e}` })
+        } else if (result.success === false || result.success === 'false') {
+          message = `${methodName} - request was unsuccessful`
         }
         if (message) {
           this.logger({ level: LOG_LEVELS.ERROR, message })
           return Promise.reject(new Error(message))
         }
+        this.logger({message: `${methodName} - successfully made request`})
         return result
       }, error => {
         const errors = getSplitwiseErrors(error)
-        let message = `${methodName} - something went wrong`
+        let message = `${methodName} - request was unsuccessful`
         if (errors.length === 1) {
           message = `${methodName} - ${errors[0]}`
         } else if (errors.length > 1) {
@@ -548,10 +551,6 @@ class Splitwise {
         return Promise.reject(new Error(message))
       })
 
-      resultPromise.then(() => {
-        this.logger({message: `${methodName} - successfully made request`})
-      }, () => {})
-
       if (propName) {
         resultPromise = resultPromise.then(val => R.propOr(val, propName, val))
       }
@@ -560,11 +559,9 @@ class Splitwise {
         resultPromise.then(
           result => {
             callback(null, result)
-            return result
           },
           error => {
             callback(error, null)
-            return Promise.reject(error)
           }
         )
       }
