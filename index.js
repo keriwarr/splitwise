@@ -18,7 +18,8 @@ module.exports = (function () {
     EXPENSE: 'expense',
     FRIENDS: 'friends',
     FRIEND: 'friend',
-    NOTIFICATIONS: 'notifications'
+    NOTIFICATIONS: 'notifications',
+    SUCCESS: 'success'
   }
 
   const ID_PARAM_NAMES = {
@@ -36,7 +37,7 @@ module.exports = (function () {
   }
 
   const METHODS = {
-    TEST: { // TODO: maybe just return a booL?
+    TEST: {
       endpoint: 'test',
       methodName: 'test',
       verb: METHOD_VERBS.GET
@@ -114,21 +115,24 @@ module.exports = (function () {
       endpoint: 'delete_group',
       methodName: 'deleteGroup',
       verb: METHOD_VERBS.POST,
+      propName: PROP_NAMES.SUCCESS,
       idParamName: PROP_NAMES.GROUP
     },
     ADD_USER_TO_GROUP: {
       endpoint: 'add_user_to_group',
       methodName: 'addUserToGroup',
       verb: METHOD_VERBS.POST,
+      propName: PROP_NAMES.SUCCESS,
       paramNames: ['group_id', 'user_id', 'first_name', 'last_name', 'email']
     },
     REMOVE_USER_FROM_GROUP: {
       endpoint: 'remove_user_from_group',
       methodName: 'removeUserFromGroup',
       verb: METHOD_VERBS.POST,
+      propName: PROP_NAMES.SUCCESS,
       paramNames: ['user_id', 'group_id']
     },
-    GET_EXPENSES: { // TODO: filter deleted, offer get deleted expenses method?
+    GET_EXPENSES: {
       endpoint: 'get_expenses',
       methodName: 'getExpenses',
       verb: METHOD_VERBS.GET,
@@ -151,7 +155,7 @@ module.exports = (function () {
       propName: PROP_NAMES.EXPENSE,
       idParamName: ID_PARAM_NAMES.EXPENSE
     },
-    CREATE_EXPENSE: { // TODO: return first expense? (returns array of expenses)
+    CREATE_EXPENSE: {
       endpoint: 'create_expense',
       methodName: 'createExpense',
       verb: METHOD_VERBS.POST,
@@ -194,6 +198,7 @@ module.exports = (function () {
       endpoint: 'delete_expense',
       methodName: 'deleteExpense',
       verb: METHOD_VERBS.POST,
+      propName: PROP_NAMES.SUCCESS,
       idParamName: ID_PARAM_NAMES.EXPENSE
     },
     GET_FRIENDS: {
@@ -223,10 +228,11 @@ module.exports = (function () {
       propName: PROP_NAMES.FRIENDS,
       paramNames: ['friends']
     },
-    DELETE_FRIEND: { // TODO: maybe return ['success'] ?
+    DELETE_FRIEND: {
       endpoint: 'delete_friend',
       methodName: 'deleteFriend',
       verb: METHOD_VERBS.DELETE,
+      propName: PROP_NAMES.SUCCESS,
       idParamName: ID_PARAM_NAMES.FRIEND
     },
     GET_NOTIFICATIONS: {
