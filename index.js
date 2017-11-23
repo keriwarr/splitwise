@@ -316,19 +316,120 @@ module.exports = (function () {
     )
   }
 
-  const store = new WeakMap()
+  const getOAuthRequestWrapper = (
+    logger,
+    oAuthRequest,
+    oauth2
+  ) => (
+    url,
+    verb,
+    postData,
+    token
+  ) => {
+    if (!url) {
+      const message = 'oAuthRequestWrapper - a URL must be provided'
+      logger({ level: LOG_LEVELS.ERROR, message })
+      return Promise.reject(new Error(message))
+    }
+    if (!METHOD_VERBS[verb]) {
+      const message = 'oAuthRequestWrapper - unknown http verb'
+      logger({ level: LOG_LEVELS.ERROR, message })
+      return Promise.reject(new Error(message))
+    }
+    if (!token) {
+      const message = 'oAuthRequestWrapper - a token must be provided'
+      logger({ level: LOG_LEVELS.ERROR, message })
+      return Promise.reject(new Error(message))
+    }
 
-  const generateEndpointMethod = function generateEndpointMethod ({
+    return oAuthRequest(
+      verb,
+      url,
+      {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        Authorization: oauth2.buildAuthHeader(token)
+      },
+      querystring.stringify(postData),
+      null
+    )
+  }
+
+  const getSplitwiseRequest = (logger, oAuthGet) => (endpoint) => {
+    if (!endpoint) {
+      const message = 'splitwiseRequest - an endpoint must be specified'
+      logger({ level: LOG_LEVELS.ERROR, message })
+      return Promise.reject(new Error(message))
+    }
+
+    return token =>
+      oAuthGet(`${API_URL}${endpoint}`, token).then(JSON.parse)
+  }
+
+  const getSplitwiseRequestWithData = (logger, oAuthRequestWrapper) => (endpoint, verb, data) => {
+    if (!endpoint) {
+      const message = 'splitwiseRequestWithData - an endpoint must be specified'
+      logger({ level: LOG_LEVELS.ERROR, message })
+      return Promise.reject(new Error(message))
+    }
+    if (!data) {
+      const message = 'splitwiseRequestWithData - data must be provided'
+      logger({ level: LOG_LEVELS.ERROR, message })
+      return Promise.reject(new Error(message))
+    }
+
+    return token =>
+      oAuthRequestWrapper(
+        `${API_URL}${endpoint}`,
+        verb,
+        splitwisifyParameters(data),
+        token
+      ).then(JSON.parse)
+  }
+
+  const getTokenPromise = (logger, getOAuthAccessToken) => {
+    return getOAuthAccessToken().then(token => {
+      logger({ message: 'successfully aquired access token' })
+      return token
+    }).catch(error => {
+      const reason = (() => {
+        let data
+        if (error && error.data) {
+          try {
+            data = JSON.parse(error.data)
+          } catch (e) { }
+        }
+
+        if (data && data.error === 'invalid_client') {
+          return 'your credentials are incorrect'
+        }
+        if (error && error.statusCode >= 400 && error.statusCode < 500) {
+          return 'client error'
+        }
+        if (error && error.statusCode >= 500 && error.statusCode < 600) {
+          return 'server error'
+        }
+        return 'unknown error'
+      })()
+      const message = `authentication failed - ${reason}`
+      logger({ level: LOG_LEVELS.ERROR, message })
+      return Promise.reject(new Error(message))
+    })
+  }
+
+  const getEndpointMethodGenerator = (
+    logger,
+    tokenPromise,
+    splitwiseRequest,
+    splitwiseRequestWithData,
+    defaultIDs
+  ) => ({
     verb,
     endpoint,
     propName,
     methodName,
     idParamName,
     paramNames = []
-  }) {
-    const state = store.get(this)
-    const { logger, tokenPromise, splitwiseRequest, splitwiseRequestWithData } = state
-
+  }) => {
     if (!endpoint) {
       const message = 'methodWrapper - an endpoint must be specified'
       logger({ level: LOG_LEVELS.ERROR, message })
@@ -348,7 +449,7 @@ module.exports = (function () {
     const wrapped = (params = {}, callback) => {
       let id = ''
       if (idParamName) {
-        id = params.id || params[idParamName] || state[idParamName]
+        id = params.id || params[idParamName] || defaultIDs[idParamName]
         if (!id) {
           const message = `${methodName} - must provide id parameter`
           const error = new Error(message)
@@ -438,103 +539,6 @@ module.exports = (function () {
     return wrapped
   }
 
-  const oAuthRequestWrapper = function oAuthRequestWrapper (url, verb, postData, token) {
-    const { logger, oAuthRequest, oauth2 } = store.get(this)
-
-    if (!url) {
-      const message = 'oAuthRequestWrapper - a URL must be provided'
-      logger({ level: LOG_LEVELS.ERROR, message })
-      return Promise.reject(new Error(message))
-    }
-    if (!METHOD_VERBS[verb]) {
-      const message = 'oAuthRequestWrapper - unknown http verb'
-      logger({ level: LOG_LEVELS.ERROR, message })
-      return Promise.reject(new Error(message))
-    }
-    if (!token) {
-      const message = 'oAuthRequestWrapper - a token must be provided'
-      logger({ level: LOG_LEVELS.ERROR, message })
-      return Promise.reject(new Error(message))
-    }
-
-    return oAuthRequest(
-      verb,
-      url,
-      {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        Authorization: oauth2.buildAuthHeader(token)
-      },
-      querystring.stringify(postData),
-      null
-    )
-  }
-
-  const splitwiseRequest = function splitwiseRequest (endpoint) {
-    const { logger, oAuthGet } = store.get(this)
-
-    if (!endpoint) {
-      const message = 'splitwiseRequest - an endpoint must be specified'
-      logger({ level: LOG_LEVELS.ERROR, message })
-      return Promise.reject(new Error(message))
-    }
-
-    return token =>
-      oAuthGet(`${API_URL}${endpoint}`, token).then(JSON.parse)
-  }
-
-  const splitwiseRequestWithData = function splitwiseRequestWithData (endpoint, verb, data) {
-    const { logger, oAuthRequestWrapper } = store.get(this)
-
-    if (!endpoint) {
-      const message = 'splitwiseRequestWithData - an endpoint must be specified'
-      logger({ level: LOG_LEVELS.ERROR, message })
-      return Promise.reject(new Error(message))
-    }
-    if (!data) {
-      const message = 'splitwiseRequestWithData - data must be provided'
-      logger({ level: LOG_LEVELS.ERROR, message })
-      return Promise.reject(new Error(message))
-    }
-
-    return token =>
-      oAuthRequestWrapper(
-        `${API_URL}${endpoint}`,
-        verb,
-        splitwisifyParameters(data),
-        token
-      ).then(JSON.parse)
-  }
-
-  const getTokenPromise = function getTokenPromise (logger, getOAuthAccessToken) {
-    return getOAuthAccessToken().then(token => {
-      logger({ message: 'successfully aquired access token' })
-      return token
-    }).catch(error => {
-      const reason = (() => {
-        let data
-        if (error && error.data) {
-          try {
-            data = JSON.parse(error.data)
-          } catch (e) { }
-        }
-
-        if (data && data.error === 'invalid_client') {
-          return 'your credentials are incorrect'
-        }
-        if (error && error.statusCode >= 400 && error.statusCode < 500) {
-          return 'client error'
-        }
-        if (error && error.statusCode >= 500 && error.statusCode < 600) {
-          return 'server error'
-        }
-        return 'unknown error'
-      })()
-      const message = `authentication failed - ${reason}`
-      logger({ level: LOG_LEVELS.ERROR, message })
-      return Promise.reject(new Error(message))
-    })
-  }
-
   const getLogLevel = (logLevel) => {
     if (logLevel && logLevel.toLowerCase() === 'error') {
       return LOG_LEVELS.ERROR
@@ -559,34 +563,26 @@ module.exports = (function () {
   }
 
   class Splitwise {
-    constructor ({
-      consumerKey,
-      consumerSecret,
-      accessToken,
-      groupID,
-      userID,
-      expenseID,
-      friendID,
-      logLevel,
-      logger
-    }) {
-      const state = {}
-      state.consumerKey = consumerKey
-      state.consumerSecret = consumerSecret
-      state.groupID = groupID
-      state.userID = userID
-      state.expenseID = expenseID
-      state.friendID = friendID
-      state.logLevel = getLogLevel(logLevel)
-      state.logger = getLoggerMethod(logger, logLevel)
+    constructor (options) {
+      const consumerKey = options.consumerKey
+      const consumerSecret = options.consumerSecret
+      const accessToken = options.accessToken
+      const defaultIDs = {
+        groupID: options.groupID,
+        userID: options.userID,
+        expenseID: options.expenseID,
+        friendID: options.friendID
+      }
+      const logLevel = getLogLevel(options.logLevel)
+      const logger = getLoggerMethod(options.logger, logLevel)
 
-      if (!state.consumerKey || !state.consumerSecret) {
+      if (!consumerKey || !consumerSecret) {
         const message = 'both a consumer key, and a consumer secret must be provided'
-        state.logger({ level: LOG_LEVELS.ERROR, message })
+        logger({ level: LOG_LEVELS.ERROR, message })
         throw new Error(message)
       }
 
-      state.oauth2 = new OAuth2(
+      const oauth2 = new OAuth2(
         consumerKey,
         consumerSecret,
         'https://secure.splitwise.com/',
@@ -595,46 +591,55 @@ module.exports = (function () {
         null
       )
 
-      state.getOAuthAccessToken = promisify(
-        state.oauth2.getOAuthAccessToken,
-        { thisArg: state.oauth2 }
-      ).bind(null, '', { grant_type: 'client_credentials' })
+      const promisifiedGetToken = promisify(
+        oauth2.getOAuthAccessToken,
+        { thisArg: oauth2 }
+      )
+      const getOAuthAccessToken = () => promisifiedGetToken(
+        '', { grant_type: 'client_credentials' }
+      )
 
-      state.oAuthGet = promisify(state.oauth2.get, { thisArg: state.oauth2 })
+      const oAuthGet = promisify(oauth2.get, { thisArg: oauth2 })
 
       // eslint-disable-next-line no-underscore-dangle
-      state.oAuthRequest = promisify(state.oauth2._request, { thisArg: state.oauth2 })
-      state.tokenPromise = (() => {
+      const oAuthRequest = promisify(oauth2._request, { thisArg: oauth2 })
+      const tokenPromise = (() => {
         if (accessToken) {
-          state.logger({ message: 'using provided access token' })
+          logger({ message: 'using provided access token' })
           return Promise.result(accessToken)
         } else {
-          state.logger({ message: 'making request for access token' })
-          return getTokenPromise(state.logger, state.getOAuthAccessToken)
+          logger({ message: 'making request for access token' })
+          return getTokenPromise(logger, getOAuthAccessToken)
         }
       })()
 
-      state.oAuthRequestWrapper = oAuthRequestWrapper.bind(this)
-      state.splitwiseRequest = splitwiseRequest.bind(this)
-      state.splitwiseRequestWithData = splitwiseRequestWithData.bind(this)
+      const oAuthRequestWrapper = getOAuthRequestWrapper(
+        logger,
+        oAuthRequest,
+        oauth2
+      )
+      const splitwiseRequest = getSplitwiseRequest(
+        logger,
+        oAuthGet
+      )
+      const splitwiseRequestWithData = getSplitwiseRequestWithData(
+        logger,
+        oAuthRequestWrapper
+      )
 
-      store.set(this, state)
+      const endpointMethodGenerator = getEndpointMethodGenerator(
+        logger,
+        tokenPromise,
+        splitwiseRequest,
+        splitwiseRequestWithData,
+        defaultIDs
+      )
 
       R.values(METHODS).forEach(method => {
-        this[method.methodName] = generateEndpointMethod.call(this, method)
+        this[method.methodName] = endpointMethodGenerator(method)
       })
-    }
 
-    getAccessToken () {
-      return store.get(this).tokenPromise
-    }
-
-    refreshAccessToken () {
-      const state = store.get(this)
-
-      state.tokenPromise = getTokenPromise(state.logger, state.getOAuthAccessToken)
-      store.set(this, state)
-      return state.tokenPromise
+      this.getAccessToken = () => tokenPromise
     }
 
     createDebt ({ from, to, amount, description, groupID }) {
