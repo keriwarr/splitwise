@@ -4,7 +4,7 @@ module.exports = (function () {
   const { OAuth2 } = require('oauth')
   const querystring = require('querystring')
   const promisify = require('es6-promisify')
-  const R = require('ramda')
+  const R = require('./ramda.js')
 
   const API_URL = 'https://secure.splitwise.com/api/v3.0/'
 
