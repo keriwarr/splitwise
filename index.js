@@ -623,6 +623,14 @@ module.exports = (function () {
       return store.get(this).tokenPromise
     }
 
+    refreshAccessToken () {
+      const state = store.get(this)
+
+      state.tokenPromise = getTokenPromise(state.logger, state.getOAuthAccessToken)
+      store.set(this, state)
+      return state.tokenPromise
+    }
+
     createDebt ({ from, to, amount, description, groupID }) {
       return this.createExpense({
         description,
