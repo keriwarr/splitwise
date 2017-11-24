@@ -7,5 +7,6 @@ module.exports = ({
   propOr: require('ramda').propOr,
   toPairs: require('ramda').toPairs,
   type: require('ramda').type,
-  values: require('ramda').values
+  values: require('ramda').values,
+  find: require('ramda').find
 })
