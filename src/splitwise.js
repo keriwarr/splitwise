@@ -7,7 +7,7 @@ module.exports = (function () {
 
   const R = require('./ramda.js')
   const { LOG_LEVELS, getLogger } = require('./logger.js')
-  const { splitwisifyParameters, getSplitwiseErrors } = require('./splitwise-utils.js')
+  const { splitwisifyParameters, getSplitwiseErrors } = require('./utils.js')
   const { METHOD_VERBS, PROP_NAMES, ID_PARAM_NAMES, API_URL } = require('./constants.js')
 
   const METHODS = {

@@ -2,7 +2,7 @@
   "name": "splitwise",
   "version": "0.4.0",
   "description": "A JavaScript SDK for the Splitwise API.",
-  "main": "index.js",
+  "main": "src/index.js",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/keriwarr/splitwise.git"
@@ -21,7 +21,7 @@
     "node": ">=6.0.0"
   },
   "scripts": {
-    "lint": "bash ./pre-commit.sh",
+    "lint": "bash ./scripts/pre-commit.sh",
     "precommit": "npm run lint"
   },
   "dependencies": {
