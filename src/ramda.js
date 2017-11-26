@@ -8,5 +8,9 @@ module.exports = ({
   toPairs: require('ramda').toPairs,
   type: require('ramda').type,
   values: require('ramda').values,
-  find: require('ramda').find
+  find: require('ramda').find,
+  is: require('ramda').is,
+  anyPass: require('ramda').anyPass,
+  keys: require('ramda').keys,
+  flatten: require('ramda').flatten
 })
