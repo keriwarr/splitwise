@@ -4,6 +4,7 @@ module.exports = (function () {
   const { OAuth2 } = require('oauth')
   const querystring = require('querystring')
   const promisify = require('es6-promisify')
+  const validate = require('validate.js')
 
   const R = require('./ramda.js')
   const { LOG_LEVELS, getLogger } = require('./logger.js')
@@ -224,25 +225,63 @@ module.exports = (function () {
     }
   }
 
+  /**
+   * Consistently handles error scenarios
+   * @param {Object} options - `fail` consumes arguments via an options object
+   * @param {string} options.context - The context in which the error occured
+   * @param {string} options.message - A description of the error
+   * @param {Function} options.callback - Will be called with the error as it's first argument
+   * @param {Function} options.logger - Will be called with a message and the ERROR log level
+   * @param {boolean} options.shouldThrow - Rather than returning a promise, will throw an error
+   * @returns {Promise.<Error>} A promise that has been rejected with an Error
+   */
+  const fail = ({context, message, callback, logger, shouldThrow} = {}) => {
+    const contextPrefix = context ? `${context} - ` : ''
+    const errorMessage = `${contextPrefix}${message}`
+    if (logger) {
+      logger({ level: LOG_LEVELS.ERROR, message: errorMessage })
+    }
+    const error = new Error(errorMessage)
+    if (shouldThrow) {
+      throw error
+    }
+    if (callback) {
+      callback(error, null)
+    }
+    return Promise.reject(error)
+  }
+
+  /**
+   * @param {Function} logger - The logger provided by getLogger
+   * @param {Object} oauth2 - An instance of OAuth2
+   * @returns {Function} A method which can make oauth requests
+   */
   const getOAuthRequestWrapper = (logger, oauth2) => {
     // eslint-disable-next-line no-underscore-dangle
     const oAuthRequest = promisify(oauth2._request, { thisArg: oauth2 })
+    const oAuthRequestWrapperFail = message => fail({
+      logger,
+      message,
+      context: 'oAuthRequestWrapper'
+    })
 
-    return (url, verb, postData, token) => {
+    /**
+     * Make an oauth request
+     * @param {string} url - The endpoint to send a request to
+     * @param {string} verb - Which http verb to use
+     * @param {Object} data - The data to be sent along with the request
+     * @param {string} accessToken - The oauth access token
+     * @returns {Promise} The data from the endpoint
+     */
+    const oAuthRequestWrapper = (url, verb, data, accessToken) => {
       if (!url) {
-        const message = 'oAuthRequestWrapper - a URL must be provided'
-        logger({ level: LOG_LEVELS.ERROR, message })
-        return Promise.reject(new Error(message))
+        return oAuthRequestWrapperFail('a URL must be provided')
       }
       if (!METHOD_VERBS[verb]) {
-        const message = 'oAuthRequestWrapper - unknown http verb'
-        logger({ level: LOG_LEVELS.ERROR, message })
-        return Promise.reject(new Error(message))
+        return oAuthRequestWrapperFail('unknown http verb')
       }
-      if (!token) {
-        const message = 'oAuthRequestWrapper - a token must be provided'
-        logger({ level: LOG_LEVELS.ERROR, message })
-        return Promise.reject(new Error(message))
+      if (!accessToken) {
+        return oAuthRequestWrapperFail('an access token must be provided')
       }
 
       return oAuthRequest(
@@ -250,75 +289,113 @@ module.exports = (function () {
         url,
         {
           'Content-Type': 'application/x-www-form-urlencoded',
-          Authorization: oauth2.buildAuthHeader(token)
+          Authorization: oauth2.buildAuthHeader(accessToken)
         },
-        querystring.stringify(postData),
+        querystring.stringify(data),
         null
       )
     }
+
+    return oAuthRequestWrapper
   }
 
+  /**
+   * @param {Function} logger - The logger provided by getLogger
+   * @param {Object} oauth2 - An instance of OAuth2
+   * @returns A method for making requests to Splitwise
+   */
   const getSplitwiseRequest = (logger, oauth2) => {
     const oAuthGet = promisify(oauth2.get, { thisArg: oauth2 })
+    const splitwiseRequestFail = message => fail({
+      logger,
+      message,
+      context: 'splitwiseRequest'
+    })
 
-    return (endpoint) => {
+    /**
+     * Make a request to splitwise
+     * @param {string} endpoint - The endpoint to send a request to
+     * @returns {Promise} The data returned from Splitwise
+     */
+    const splitwiseRequest = (endpoint) => {
       if (!endpoint) {
-        const message = 'splitwiseRequest - an endpoint must be specified'
-        logger({ level: LOG_LEVELS.ERROR, message })
-        return Promise.reject(new Error(message))
+        return splitwiseRequestFail('an endpoint must be specified')
       }
 
-      return token =>
-        oAuthGet(`${API_URL}${endpoint}`, token).then(JSON.parse)
+      return accessToken => oAuthGet(
+        `${API_URL}${endpoint}`,
+        accessToken
+      ).then(JSON.parse)
     }
+
+    return splitwiseRequest
   }
 
+  /**
+   * @param {Function} logger - The logger provided by getLogger
+   * @param {Object} oauth2 - An instance of OAuth2
+   * @returns {Function} A method for making requests with data to Splitwise
+   */
   const getSplitwiseRequestWithData = (logger, oauth2) => {
     const oAuthRequestWrapper = getOAuthRequestWrapper(logger, oauth2)
+    const splitwiseRequestWithDataFail = message => fail({
+      logger,
+      message,
+      context: 'splitwiseRequestWithData'
+    })
 
-    return (endpoint, verb, data) => {
+    /**
+     * Make a request with data to Splitwise
+     * @param {string} endpoint - The endpoint to send a request to
+     * @param {string} verb - Which http verb to use
+     * @param {Object} data - The data to be sent along with the request
+     * @returns {Promise} The data returned from Splitwise
+     */
+    const splitwiseRequestWithData = (endpoint, verb, data) => {
       if (!endpoint) {
-        const message = 'splitwiseRequestWithData - an endpoint must be specified'
-        logger({ level: LOG_LEVELS.ERROR, message })
-        return Promise.reject(new Error(message))
+        return splitwiseRequestWithDataFail('an endpoint must be specified')
       }
       if (!data) {
-        const message = 'splitwiseRequestWithData - data must be provided'
-        logger({ level: LOG_LEVELS.ERROR, message })
-        return Promise.reject(new Error(message))
+        return splitwiseRequestWithDataFail('data must be provided')
       }
 
-      return token =>
-        oAuthRequestWrapper(
-          `${API_URL}${endpoint}`,
-          verb,
-          splitwisifyParameters(data),
-          token
-        ).then(JSON.parse)
+      return accessToken => oAuthRequestWrapper(
+        `${API_URL}${endpoint}`,
+        verb,
+        splitwisifyParameters(data), // un-nest data, and convert bools into numbers
+        accessToken
+      ).then(JSON.parse)
     }
+
+    return splitwiseRequestWithData
   }
 
-  const getTokenPromise = (logger, oauth2) => {
-    const promisifiedGetToken = promisify(
+  /**
+   * Returns a promise for a Splitwise access token
+   * @param {Function} logger - The logger provided by getLogger
+   * @param {Object} oauth2 - An instance of OAuth2
+   * @returns {Promise.<string>} A Splitwise access token
+   */
+  const getAccessTokenPromise = (logger, oauth2) => {
+    const getOAuthAccessToken = promisify(
       oauth2.getOAuthAccessToken,
       { thisArg: oauth2 }
     )
-    const getOAuthAccessToken = () => promisifiedGetToken(
-      '', { grant_type: 'client_credentials' }
-    )
 
-    return getOAuthAccessToken().then(token => {
+    const accessTokenPromise = getOAuthAccessToken('', { grant_type: 'client_credentials' })
+
+    accessTokenPromise.then(() => {
       logger({ message: 'successfully aquired access token' })
-      return token
-    }).catch(error => {
-      const reason = (() => {
-        let data
-        if (error && error.data) {
-          try {
-            data = JSON.parse(error.data)
-          } catch (e) { }
-        }
+    }, () => {})
 
+    const handledAccessToken = accessTokenPromise.catch(error => {
+      const data = (() => {
+        try {
+          return JSON.parse(error.data)
+        } catch (e) { }
+        return null
+      })()
+      const reason = (() => {
         if (data && data.error === 'invalid_client') {
           return 'your credentials are incorrect'
         }
@@ -330,53 +407,115 @@ module.exports = (function () {
         }
         return 'unknown error'
       })()
-      const message = `authentication failed - ${reason}`
-      logger({ level: LOG_LEVELS.ERROR, message })
-      return Promise.reject(new Error(message))
+
+      return fail({ logger, message: `authentication failed - ${reason}` })
     })
+
+    return handledAccessToken
   }
 
-  const getEndpointMethodGenerator = (logger, tokenPromise, defaultIDs, oauth2) => {
+  /**
+   * @param {Function} logger - The logger provided by getLogger
+   * @param {Promise.<string>} accessTokenPromise - A promise for a Splitwise access token
+   * @param {Object} defaultIDs - A map of IDs to use by default if one is not provided
+   * @param {Object} oauth2 - An instance of OAuth2
+   * @returns {Function} A method for generating methods for interacting with Splitwise
+   */
+  const getEndpointMethodGenerator = (logger, accessTokenPromise, defaultIDs, oauth2) => {
     const splitwiseRequest = getSplitwiseRequest(logger, oauth2)
     const splitwiseRequestWithData = getSplitwiseRequestWithData(logger, oauth2)
+    const endpointMethodGeneratorFail = message => fail({
+      logger,
+      message,
+      shouldThrow: true,
+      context: 'endpointMethodGenerator'
+    })
 
-    return ({ verb, endpoint, propName, methodName, idParamName, paramNames = [] }) => {
+    /**
+     * @param {string} verb - Which http verb to use
+     * @param {string} endpoint - Which Splitwise endpoint to use
+     * @param {string} propName - The key under which the return value is nested
+     * @param {string} methodName - The returned method will have this name bound to it
+     * @param {string} idParamName - The name of the default ID to use
+     * @param {string[]} paramNames - The names of the parameters to expect
+     * @param {Object} constraints - validate.js constraints on the params
+     * @returns {Function} A method for interacting with a Splitwise endpoint
+     */
+    const endpointMethodGenerator = ({
+      verb,
+      endpoint,
+      propName,
+      methodName,
+      idParamName,
+      paramNames = [],
+      constraints = {}
+    }) => {
       if (!endpoint) {
-        const message = 'methodWrapper - an endpoint must be specified'
-        logger({ level: LOG_LEVELS.ERROR, message })
-        throw new Error(message)
+        endpointMethodGeneratorFail('an endpoint must be specified')
       }
       if (!METHOD_VERBS[verb]) {
-        const message = 'methodWrapper - unknown http verb'
-        logger({ level: LOG_LEVELS.ERROR, message })
-        throw new Error(message)
+        endpointMethodGeneratorFail('unknown http verb')
       }
       if (!methodName) {
-        const message = 'methodWrapper - a method name must be provided'
-        logger({ level: LOG_LEVELS.ERROR, message })
-        throw new Error(message)
+        endpointMethodGeneratorFail('a method name must be provided')
+      }
+      const wrappedFail = ({message, callback}) => fail({
+        logger,
+        message,
+        callback,
+        context: methodName
+      })
+      const augmentedConstraints = (() => {
+        if (idParamName) {
+          return Object.assign({}, constraints, {
+            id: { presence: { allowEmpty: false } }
+          })
+        }
+        return constraints
+      })()
+      const makeErrorMessage = (errors) => {
+        if (errors.length === 0) {
+          return ''
+        }
+        if (errors.length === 1) {
+          return `${methodName} - ${errors[0]}`
+        }
+        return errors.reduce((messageSoFar, nextError) => {
+          return `${messageSoFar}\n - ${nextError}`
+        }, `${methodName}:`)
       }
 
+      /**
+       * Makes a call to a specific Splitwise endpoint
+       * @param {Object} params - Arguments to be passed to the endpoint
+       * @param {Function} callback - Will be called with the error as the first arg,
+       *                              and the results as the second
+       * @returns {Promise} An error or the response from the endpoint
+       */
       const wrapped = (params = {}, callback) => {
-        let id = ''
-        if (idParamName) {
-          id = params.id || params[idParamName] || defaultIDs[idParamName]
-          if (!id) {
-            const message = `${methodName} - must provide id parameter`
-            const error = new Error(message)
-            logger({ level: LOG_LEVELS.ERROR, message })
-            if (callback) callback(error, null)
-            return Promise.reject(error)
-          }
+        const id = (idParamName && (params.id || defaultIDs[idParamName])) || ''
+        const augmentedParams = Object.assign({}, params, { id })
+
+        // Ensure the provided params are valid
+        const allErrors = validate(augmentedParams, augmentedConstraints, {fullMessages: false})
+        if (allErrors) {
+          const flattenedErrors = R.flatten(R.toPairs(allErrors).map(([argument, errors]) => {
+            return errors.map(error => `\`${argument}\` ${error}`)
+          }))
+
+          const message = makeErrorMessage(flattenedErrors)
+          return wrappedFail({message, callback})
         }
 
         let url = `${endpoint}/${id}`
-        let resultPromise = tokenPromise
+        // Get the access token
+        let resultPromise = accessTokenPromise
 
         resultPromise.then(() => {
           logger({ message: `${methodName} - making request` })
         }, () => { })
 
+        // Make the request
         if (verb === METHOD_VERBS.GET) {
           const queryParams = querystring.stringify(R.pick(paramNames, params))
 
@@ -387,48 +526,33 @@ module.exports = (function () {
           resultPromise = resultPromise.then(splitwiseRequest(url))
         } else {
           resultPromise = resultPromise.then(
-            splitwiseRequestWithData(
-              url,
-              verb,
-              R.pick(paramNames, params)
-            )
+            splitwiseRequestWithData(url, verb, R.pick(paramNames, params))
           )
         }
 
+        // Handle any errors
         resultPromise = resultPromise.then(result => {
           const errors = getSplitwiseErrors(R.pick(['error', 'errors'], result))
-          let message
-          if (errors.length === 1) {
-            message = `${methodName} - ${errors[0]}`
-          } else if (errors.length > 1) {
-            message = `${methodName}:`
-            errors.forEach(e => { message += `\n - ${e}` })
-          } else if (result.success === false || result.success === 'false') {
-            message = `${methodName} - request was unsuccessful`
-          }
+          const message = makeErrorMessage(errors) || (
+            !result.success && `${methodName} - request was unsuccessful`
+          )
           if (message) {
-            logger({ level: LOG_LEVELS.ERROR, message })
-            return Promise.reject(new Error(message))
+            return wrappedFail({message, callback})
           }
           logger({ message: `${methodName} - successfully made request` })
           return result
         }, error => {
           const errors = getSplitwiseErrors(error)
-          let message = `${methodName} - request was unsuccessful`
-          if (errors.length === 1) {
-            message = `${methodName} - ${errors[0]}`
-          } else if (errors.length > 1) {
-            message = `${methodName}:`
-            errors.forEach(e => { message += `\n - ${e}` })
-          }
-          logger({ level: LOG_LEVELS.ERROR, message })
-          return Promise.reject(new Error(message))
+          let message = makeErrorMessage(errors) || `${methodName} - request was unsuccessful`
+          return wrappedFail({ message, callback })
         })
 
+        // Return data, not nested within an object
         if (propName) {
           resultPromise = resultPromise.then(val => R.propOr(val, propName, val))
         }
 
+        // Call the callback if it's given
         if (callback) {
           resultPromise.then(
             result => {
@@ -443,14 +567,20 @@ module.exports = (function () {
         return resultPromise
       }
 
+      // Assign the method's name far the sake of stack traces
       Object.defineProperty(wrapped, 'name', {
         value: methodName,
         writable: false
       })
       return wrapped
     }
+
+    return endpointMethodGenerator
   }
 
+  /**
+   * @class
+   */
   class Splitwise {
     constructor (options) {
       const consumerKey = options.consumerKey
@@ -479,30 +609,33 @@ module.exports = (function () {
         null
       )
 
-      const tokenPromise = (() => {
+      const accessTokenPromise = (() => {
         if (accessToken) {
           logger({ message: 'using provided access token' })
-          return Promise.result(accessToken)
+          return Promise.resolve(accessToken)
         } else {
           logger({ message: 'making request for access token' })
-          return getTokenPromise(logger, oauth2)
+          return getAccessTokenPromise(logger, oauth2)
         }
       })()
 
       this.generateEndpointMethod = getEndpointMethodGenerator(
         logger,
-        tokenPromise,
+        accessTokenPromise,
         defaultIDs,
         oauth2
       )
 
+      // Each of the provided methods is generated from an element in METHODS
+      // and added as an instance method
       R.values(METHODS).forEach(method => {
         this[method.methodName] = this.generateEndpointMethod(method)
       })
 
-      this.getAccessToken = () => tokenPromise
+      this.getAccessToken = () => accessTokenPromise
     }
 
+    // Bonus utility method for easily making transactions from one person to one person
     createDebt ({ from, to, amount, description, groupID }) {
       return this.createExpense({
         description,
@@ -523,5 +656,8 @@ module.exports = (function () {
     }
   }
 
+  /**
+   * We don't want a class to be visible in the public API, so it's hidden in this factory method
+   */
   return (opts) => new Splitwise(opts)
 }())
