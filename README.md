@@ -30,7 +30,7 @@ sw.getCurrentUser().then(console.log) // => { id: ... }
 
 ## Non-trivial Example
 
-In this example, we create a new expense from the current user, to the first listed user in the given group, with the same description as the first given expense.
+In this example, we create a new expense from the current user to the first listed user in the given group, with the same description as the first given expense.
 
 ```javascript
 const Splitwise = require('splitwise')
@@ -63,7 +63,7 @@ Promise.all([
 
 This is the entry point to the package. All of the other methods are in the form of properties of `sw`.
 
-[Click here](#methods) to view to the list of available methods.
+[Click here](#methods) to view the list of available methods.
 
 #### Parameters
 
@@ -94,7 +94,7 @@ sw.getGroup().then(console.log);
 
 #### Logging
 
-You can pass in a logging function to see useful debugging output. If the `logger` that is passed in has `info`, or `error` properties, then `logger.info` and `logger.error` will be called with info and error messages respectively. Otherwise `logger` will itself be called.
+You can pass in a logging function to see useful debugging output. If the `logger` that is passed in has `info` or `error` properties, then `logger.info` and `logger.error` will be called with info and error messages respectively. Otherwise, `logger` will itself be called.
 
 If you only want to see logs in the case of an error, you can pass in `logLevel: 'error'`. e.g.:
 
@@ -128,7 +128,7 @@ Splitwise({
   consumerSecret: 'your secret here'
 }).getAccessToken().then(console.log) // => abcd1234...
 
-// Now save the token somewhere (but don't check it in to your VCS!)
+// Now save the token somewhere (but don't check it into your VCS!)
 
 const sw = Splitwise({
   consumerKey: 'your key here',
@@ -153,20 +153,20 @@ sw.createDebt({
 
 ### Methods
 
-All of the below methods should be called with an object of parameters as the first argument, and (if you must), a callback as the second paramters. They all will return [Promises](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise) which will be resolved if and only if the request was successful, and rejected otherwise. e.g.:
+All of the below methods should be called with an object of parameters as the first argument, and (if you must), a callback as the second argument. They all will return [Promises](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise) which will be resolved if and only if the request was successful, and rejected otherwise. e.g.:
 
 ```javascript
 sw.verbResource({
   resourceID: '12345678',
   otherParam: 'foo'
-}).then(
+} /*, callback */).then(
   data => doSomethingWithTheData(data)
 ).catch(
   error => handleTheError(error)
 )
 ```
 
-Without further ado, here is the list of all avaiable methods. In order to see the specifics of which parameters should be passed in, and which data can be expected in response, please refer to the [official API documentation](http://dev.splitwise.com/).
+Without further ado, here is the list of all available methods. In order to see the specifics of which parameters should be passed in, and which data can be expected in response, please refer to the [official API documentation](http://dev.splitwise.com/), or click on the method in question.
 
  - [`sw.test()`](http://dev.splitwise.com/dokuwiki/doku.php?id=test)
  - [`sw.getCurrencies()`](http://dev.splitwise.com/dokuwiki/doku.php?id=get_currencies)
