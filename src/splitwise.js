@@ -558,6 +558,11 @@ module.exports = (function () {
           resultPromise = resultPromise.then(val => R.propOr(val, propName, val))
         }
 
+        // Annoying edge case
+        if (endpoint === 'create_expense') {
+          resultPromise = resultPromise.then(val => val[0])
+        }
+
         // Call the callback if it's given
         if (callback) {
           resultPromise.then(
