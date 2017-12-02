@@ -374,15 +374,18 @@ module.exports = (function () {
    * Returns a promise for a Splitwise access token
    * @param {Function} logger - The logger provided by getLogger
    * @param {Object} oauth2 - An instance of OAuth2
+   * @param {Boolean} dryRun - If true, do not perform any real network requests
    * @returns {Promise.<string>} A Splitwise access token
    */
-  const getAccessTokenPromise = (logger, oauth2) => {
+  const getAccessTokenPromise = (logger, oauth2, dryRun) => {
     const getOAuthAccessToken = promisify(
       oauth2.getOAuthAccessToken,
       { thisArg: oauth2 }
     )
 
-    const accessTokenPromise = getOAuthAccessToken('', { grant_type: 'client_credentials' })
+    const accessTokenPromise = dryRun
+      ? Promise.resolve('mockAccessToken')
+      : getOAuthAccessToken('', { grant_type: 'client_credentials' })
 
     accessTokenPromise.then(() => {
       logger({ message: 'successfully aquired access token' })
@@ -419,9 +422,10 @@ module.exports = (function () {
    * @param {Promise.<string>} accessTokenPromise - A promise for a Splitwise access token
    * @param {Object} defaultIDs - A map of IDs to use by default if one is not provided
    * @param {Object} oauth2 - An instance of OAuth2
+   * @param {Boolean} dryRun - If true, do not perform any real network requests
    * @returns {Function} A method for generating methods for interacting with Splitwise
    */
-  const getEndpointMethodGenerator = (logger, accessTokenPromise, defaultIDs, oauth2) => {
+  const getEndpointMethodGenerator = (logger, accessTokenPromise, defaultIDs, oauth2, dryRun) => {
     const splitwiseRequest = getSplitwiseRequest(logger, oauth2)
     const splitwiseRequestWithData = getSplitwiseRequestWithData(logger, oauth2)
     const endpointMethodGeneratorFail = message => fail({
@@ -516,7 +520,12 @@ module.exports = (function () {
         }, () => { })
 
         // Make the request
-        if (verb === METHOD_VERBS.GET) {
+        if (dryRun) {
+          resultPromise = resultPromise.then(token => Promise.resolve({
+            data: 'mockData',
+            accessToken: token
+          }))
+        } else if (verb === METHOD_VERBS.GET) {
           const queryParams = querystring.stringify(R.pick(paramNames, params))
 
           if (queryParams) {
@@ -593,6 +602,7 @@ module.exports = (function () {
         friendID: options.friendID
       }
       const logger = getLogger(options.logger, options.logLevel)
+      const dryRun = options.dryRun
 
       if (!consumerKey || !consumerSecret) {
         const message = 'both a consumer key, and a consumer secret must be provided'
@@ -615,7 +625,7 @@ module.exports = (function () {
           return Promise.resolve(accessToken)
         } else {
           logger({ message: 'making request for access token' })
-          return getAccessTokenPromise(logger, oauth2)
+          return getAccessTokenPromise(logger, oauth2, dryrun)
         }
       })()
 
@@ -623,7 +633,8 @@ module.exports = (function () {
         logger,
         accessTokenPromise,
         defaultIDs,
-        oauth2
+        oauth2,
+        dryrun
       )
 
       // Each of the provided methods is generated from an element in METHODS
