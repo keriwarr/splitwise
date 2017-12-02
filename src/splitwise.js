@@ -467,9 +467,11 @@ module.exports = (function () {
       })
       const augmentedConstraints = (() => {
         if (idParamName) {
-          return Object.assign({}, constraints, {
-            id: { presence: { allowEmpty: false } }
-          })
+          return R.assoc(
+            'id',
+            { presence: { allowEmpty: false } },
+            constraints
+          )
         }
         return constraints
       })()
@@ -494,7 +496,11 @@ module.exports = (function () {
        */
       const wrapped = (params = {}, callback) => {
         const id = (idParamName && (params.id || defaultIDs[idParamName])) || ''
-        const augmentedParams = Object.assign({}, params, { id })
+        const augmentedParams = R.assoc(
+          'id',
+          id,
+          params
+        )
 
         // Ensure the provided params are valid
         const allErrors = validate(augmentedParams, augmentedConstraints, {fullMessages: false})
