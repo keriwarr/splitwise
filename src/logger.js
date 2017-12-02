@@ -2,13 +2,14 @@ module.exports = (function () {
   'use script'
 
   const R = require('./ramda.js')
+  const { isString, mapToObject } = require('./utils.js')
 
   const LOG_LEVELS = {
     INFO: 'Info',
     ERROR: 'Error'
   }
 
-  const LOG_LEVEL_NAMES = Object.keys(LOG_LEVELS).map(level => LOG_LEVELS[level])
+  const LOG_LEVEL_NAMES = R.values(LOG_LEVELS)
 
   const LEVEL_METHOD_NAMES = {
     [LOG_LEVELS.INFO]: 'info',
@@ -21,7 +22,7 @@ module.exports = (function () {
   }
 
   const getLogThreshold = (providedThreshold) => {
-    if (typeof providedThreshold !== 'string' && !(providedThreshold instanceof String)) {
+    if (!isString(providedThreshold)) {
       return LOG_LEVELS.INFO
     }
     const threshold = R.find(levelName => (
@@ -36,12 +37,12 @@ module.exports = (function () {
       return () => { }
     }
     const thresholdLevel = getLogThreshold(providedLevel)
-    const levelToMethodMapping = LOG_LEVEL_NAMES.reduce(
-      (mapping, levelName) => Object.assign(mapping, {
-        [levelName]: logger[LEVEL_METHOD_NAMES[levelName]] ||
-          (message => logger(`${levelName}: ${message}`))
-      }),
-      {}
+    const levelToMethodMapping = mapToObject(
+      levelName => (
+        logger[LEVEL_METHOD_NAMES[levelName]] ||
+        (message => logger(`${levelName}: ${message}`))
+      ),
+      LOG_LEVEL_NAMES
     )
 
     return ({ level = LOG_LEVELS.INFO, message }) => {

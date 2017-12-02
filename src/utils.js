@@ -3,6 +3,15 @@ module.exports = (function () {
 
   const R = require('./ramda.js')
 
+  const isString = R.is(String)
+  const isArray = R.is(Array)
+  const isObject = R.is(Object)
+  const isArrayOrObject = R.anyPass(isArray, isObject)
+
+  const mapToObject = R.curry((mapFn, array) => R.fromPairs(
+    R.map(val => R.pair(val, mapFn(val)), array)
+  ))
+
   const convertBooleans = R.map(val => {
     if (val === true) return 1
     if (val === false) return 0
@@ -10,21 +19,18 @@ module.exports = (function () {
   })
 
   const unnestParameters = params => {
-    const type = R.type(params)
-    if (type !== 'Array' && type !== 'Object') {
+    if (!isArrayOrObject(params)) {
       return params
     }
 
-    const pairs = R.toPairs(params)
-
-    const recursedPairs = pairs.map(([key, value]) => [
-      key,
-      unnestParameters(value)
-    ])
+    const recursedPairs = R.compose(
+      R.toPairs,
+      R.map(unnestParameters)
+    )(params)
 
     const flattenedPairs = recursedPairs.map(
       ([key, value]) =>
-        R.type(value) === 'Object'
+        isObject(value)
           ? R.compose(
             R.fromPairs,
             R.map(([subKey, subValue]) => [`${key}__${subKey}`, subValue]),
@@ -45,26 +51,25 @@ module.exports = (function () {
     if (!error) {
       return []
     }
-    if (typeof error === 'string' || error instanceof String) {
+    if (isString(error)) {
       try {
         return getSplitwiseErrors(JSON.parse(error))
       } catch (e) {
         return [error]
       }
     }
-    return [].concat.apply([],
-      [error.message, error.error, error.data]
-        .concat(
-        error.errors ? (Array.isArray(error.errors)
-          ? error.errors
-          : [].concat.apply([], Object.keys(error.errors).map(k => error.errors[k]))) : []
-        )
-        .map(getSplitwiseErrors)
-        .filter(e => !!e)
-    )
+
+    return R.flatten([
+      error.message,
+      error.error,
+      error.data,
+      R.values(error.errors)
+    ]).filter(e => !!e).map(getSplitwiseErrors)
   }
 
   return {
+    isString,
+    mapToObject,
     splitwisifyParameters,
     getSplitwiseErrors
   }

@@ -12,5 +12,7 @@ module.exports = ({
   is: require('ramda').is,
   anyPass: require('ramda').anyPass,
   keys: require('ramda').keys,
-  flatten: require('ramda').flatten
+  flatten: require('ramda').flatten,
+  pair: require('ramda').pair,
+  curry: require('ramda').curry
 })
