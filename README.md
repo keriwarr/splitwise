@@ -15,21 +15,17 @@ This module works with Node.js, version `6` or newer. To install, run:
 ```shell
  $ yarn add splitwise
 ```
-OR
-```shell
- $ npm install --save splitwise
-```
 
-### Step 3: Basic Example
+### Step 3: Get the current user
 
 ```javascript
-const { Splitwise } = require('splitwise')
-const sw = new Splitwise({
+const Splitwise = require('splitwise')
+const sw = Splitwise({
   consumerKey: 'your key here',
   consumerSecret: 'your secret here'
 })
 
-sw.getCurrentUser().then(console.log)
+sw.getCurrentUser().then(console.log) // => { id: ... }
 ```
 
 ## Non-trivial Example
@@ -37,8 +33,8 @@ sw.getCurrentUser().then(console.log)
 In this example, we create a new expense from the current user, to the first listed user in the given group, with the same description as the first given expense.
 
 ```javascript
-const { Splitwise } = require('splitwise')
-const sw = new Splitwise({
+const Splitwise = require('splitwise')
+const sw = Splitwise({
   consumerKey: 'your key here',
   consumerSecret: 'your secret here'
 })
@@ -54,50 +50,160 @@ Promise.all([
   groupID: groupID,
   description: expenses[0].description,
   amount: 100
-}))
+})).then(
+  console.log
+).catch(
+  console.error
+)
 ```
 
-## Documentation
+## API Reference
 
-In order to know which parameters must or can be passed into various methods, please refer to the original API documentation: http://dev.splitwise.com/dokuwiki/doku.php.
+### `const sw = Splitwise({...})`
 
-### `new Splitwise(options)`
+This is the entry point to the package. All of the other methods are in the form of properties of `sw`.
 
-To the constructor, you must pass in a `consumerKey` and a `consumerSecret`.
+[Click here](#methods) to view to the list of available methods.
 
-You may optionally pass in the following parameters: `groupID`, `userID`, `expenseID`, and `friendID`. They will be used by default for basic CRUD operations if you do not specify an ID. For example:
+#### Parameters
+
+| name | required? | notes |
+|-|-|-|
+| `consumerKey` | **yes** | Obtained by registering your application |
+| `consumerSecret` | **yes** | Obtained by registering your application |
+| `accessToken` | no | Re-use an existing access token |
+| `logger` | no | Will be called with info and error messages |
+| `logLevel` | no | Set to `'error'` to only see error messages |
+| `groupID` | no | See below |
+| `userID` | no | " |
+| `expenseID` | no | " |
+| `friendID` | no | " |
+
+The following parameters: `groupID`, `userID`, `expenseID`, and `friendID` can be passed in, to be used by default with all `get`/`update`/`delete` type operations. For example:
 
 ```javascript
-const sw = new Splitwise({
+const sw = Splitwise({
   // ...
   groupID: '12345678',
 });
 
+sw.getGroup({ id: '12345678' }).then(console.log);
+// is equivalent to
 sw.getGroup().then(console.log);
 ```
 
-### Wrapper Methods
+#### Logging
 
-For any of the API methods documented on Splitwise's website, you can use it by calling the camelcase named version of the endpoint on the splitwise object (i.e. `remove_user_from_group` becomes `sw.removeUserFromGroup()`).
+You can pass in a logging function to see useful debugging output. If the `logger` that is passed in has `info`, or `error` properties, then `logger.info` and `logger.error` will be called with info and error messages respectively. Otherwise `logger` will itself be called.
 
-For some group methods such as `getGroup` you must pass in a groupID:
+If you only want to see logs in the case of an error, you can pass in `logLevel: 'error'`. e.g.:
 
 ```javascript
-sw.getGroup({ groupID: '12345678' }).then();
+const sw = Splitwise({
+  consumerKey: 'your key here',
+  consumerSecret: 'your secret here',
+  logger: console.log
+})
+// => Info: making request for access token
+// ...
+// => Info: successfully aquired access token
+```
+```javascript
+const sw = Splitwise({
+  consumerKey: 'your key here',
+  consumerSecret: 'INCORRECT secret here',
+  logger: console.log,
+  logLevel: 'error'
+})
+// ...
+// => Error: your credentials are incorrect
+```
+#### `sw.getAccessToken()`
+
+When you call `Splitwise()`, an access token will automatically be fetched using your consumer credentials. If you wish to avoid this behaviour in order to save yourself a network round-trip, you may pass in your own `accessToken`. You can obtain a re-usable access token as follows:
+
+```javascript
+Splitwise({
+  consumerKey: 'your key here',
+  consumerSecret: 'your secret here'
+}).getAccessToken().then(console.log) // => abcd1234...
+
+// Now save the token somewhere (but don't check it in to your VCS!)
+
+const sw = Splitwise({
+  consumerKey: 'your key here',
+  consumerSecret: 'your secret here',
+  accessToken: 'abcd1234...'
+})
+// do stuff with `sw`
+```
+### `sw.createDebt({...})`
+
+Splitwises' endpoint for creating debts is a little awkward to use. If you have the common scenario of needing to create a simple debt between two individuals, this method will do just that.
+
+```javascript
+sw.createDebt({
+  from: '23456789',
+  to: '34567890',
+  amount: 100,
+  description: 'I am broke, please give me $100',
+  groupID: '12345678' // optional
+})
 ```
 
-For some expense methods, user methods, and friend methods, you must do the same.
+### Methods
 
-Splitwise makes some important notes about their API that booleans and nested parameters don't work. You don't need to worry about this. Instead of calling:
+All of the below methods should be called with an object of parameters as the first argument, and (if you must), a callback as the second paramters. They all will return [Promises](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise) which will be resolved if and only if the request was successful, and rejected otherwise. e.g.:
 
 ```javascript
-sw.createExpense({
+sw.verbResource({
+  resourceID: '12345678',
+  otherParam: 'foo'
+}).then(
+  data => doSomethingWithTheData(data)
+).catch(
+  error => handleTheError(error)
+)
+```
+
+Without further ado, here is the list of all avaiable methods. In order to see the specifics of which parameters should be passed in, and which data can be expected in response, please refer to the [official API documentation](http://dev.splitwise.com/).
+
+ - [`sw.test()`](http://dev.splitwise.com/dokuwiki/doku.php?id=test)
+ - [`sw.getCurrencies()`](http://dev.splitwise.com/dokuwiki/doku.php?id=get_currencies)
+ - [`sw.getCategories()`](http://dev.splitwise.com/dokuwiki/doku.php?id=get_categories)
+ - [`sw.parseSentence()`](http://dev.splitwise.com/dokuwiki/doku.php?id=parse_sentence)
+ - [`sw.getCurrentUser()`](http://dev.splitwise.com/dokuwiki/doku.php?id=get_current_user)
+ - [`sw.getUser()`](http://dev.splitwise.com/dokuwiki/doku.php?id=get_user)
+ - [`sw.updateUser()`](http://dev.splitwise.com/dokuwiki/doku.php?id=update_user)
+ - [`sw.getGroups()`](http://dev.splitwise.com/dokuwiki/doku.php?id=get_groups)
+ - [`sw.getGroup()`](http://dev.splitwise.com/dokuwiki/doku.php?id=get_group)
+ - [`sw.createGroup()`](http://dev.splitwise.com/dokuwiki/doku.php?id=create_group)
+ - [`sw.deleteGroup()`](http://dev.splitwise.com/dokuwiki/doku.php?id=delete_group)
+ - [`sw.addUserToGroup()`](http://dev.splitwise.com/dokuwiki/doku.php?id=add_user_to_group)
+ - [`sw.removeUserFromGroup()`](http://dev.splitwise.com/dokuwiki/doku.php?id=remove_user_from_group)
+ - [`sw.getExpenses()`](http://dev.splitwise.com/dokuwiki/doku.php?id=get_expenses)
+ - [`sw.getExpense()`](http://dev.splitwise.com/dokuwiki/doku.php?id=get_expense)
+ - [`sw.createExpense()`](http://dev.splitwise.com/dokuwiki/doku.php?id=create_expense)
+ - [`sw.updateExpense()`](http://dev.splitwise.com/dokuwiki/doku.php?id=update_expense)
+ - [`sw.deleteExpense()`](http://dev.splitwise.com/dokuwiki/doku.php?id=delete_expense)
+ - [`sw.getFriends()`](http://dev.splitwise.com/dokuwiki/doku.php?id=get_friends)
+ - [`sw.getFriend()`](http://dev.splitwise.com/dokuwiki/doku.php?id=get_friend)
+ - [`sw.createFriend()`](http://dev.splitwise.com/dokuwiki/doku.php?id=create_friend)
+ - [`sw.createFriends()`](http://dev.splitwise.com/dokuwiki/doku.php?id=create_friends)
+ - [`sw.deleteFriend()`](http://dev.splitwise.com/dokuwiki/doku.php?id=delete_friend)
+ - [`sw.getNotifications()`](http://dev.splitwise.com/dokuwiki/doku.php?id=get_notifications)
+ - `sw.getMainData()`
+
+**NOTE**: Splitwise makes some important notes about their API that booleans and nested parameters don't work. You won't need to worry about this. That is, instead of calling:
+
+```javascript
+sw.createExpense({ // :'(
   users__0__user_id: '23456789',
   users__1__users_id: '34567890',
   payment: 0
 })
 ```
-You make simply do:
+You will instead do:
 ```javascript
 sw.createExpense({
   users: [
@@ -108,26 +214,9 @@ sw.createExpense({
 })
 ```
 
-And on that note...
-
-### `sw.createDebt()`
-
-The params that must be passed into the `create_expense` endpoint are a little obtuse, so there is provided this helper method which can be used as follows:
-
-```javascript
-sw.createDebt({
-  from: '23456789',
-  to: '34567890',
-  amount: 100,
-  description: 'yay!'
-})
-```
-
 ## Notes
 
-Here is an alternative to this package: https://github.com/Dean177/splitwise-node
-
-This package came about after I wrote a [blog post](https://keri.warr.ca/2017/10/30/using-the-splitwise-api-from-node/) about using this API.
+Here is a good alternative to this package: https://github.com/Dean177/splitwise-node
 
 ## License
 

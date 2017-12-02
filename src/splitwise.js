@@ -534,7 +534,7 @@ module.exports = (function () {
         resultPromise = resultPromise.then(result => {
           const errors = getSplitwiseErrors(R.pick(['error', 'errors'], result))
           const message = makeErrorMessage(errors) || (
-            !result.success && `${methodName} - request was unsuccessful`
+            (result.success === false) && 'request was unsuccessful'
           )
           if (message) {
             return wrappedFail({message, callback})
@@ -543,7 +543,7 @@ module.exports = (function () {
           return result
         }, error => {
           const errors = getSplitwiseErrors(error)
-          let message = makeErrorMessage(errors) || `${methodName} - request was unsuccessful`
+          let message = makeErrorMessage(errors) || 'request was unsuccessful'
           return wrappedFail({ message, callback })
         })
 
@@ -619,7 +619,7 @@ module.exports = (function () {
         }
       })()
 
-      this.generateEndpointMethod = getEndpointMethodGenerator(
+      const generateEndpointMethod = getEndpointMethodGenerator(
         logger,
         accessTokenPromise,
         defaultIDs,
@@ -629,7 +629,7 @@ module.exports = (function () {
       // Each of the provided methods is generated from an element in METHODS
       // and added as an instance method
       R.values(METHODS).forEach(method => {
-        this[method.methodName] = this.generateEndpointMethod(method)
+        this[method.methodName] = generateEndpointMethod(method)
       })
 
       this.getAccessToken = () => accessTokenPromise
