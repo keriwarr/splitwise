@@ -14,5 +14,6 @@ module.exports = ({
   keys: require('ramda').keys,
   flatten: require('ramda').flatten,
   pair: require('ramda').pair,
-  curry: require('ramda').curry
+  curry: require('ramda').curry,
+  assoc: require('ramda').assoc
 })

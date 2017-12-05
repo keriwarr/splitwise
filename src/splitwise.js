@@ -495,7 +495,7 @@ module.exports = (function () {
        * @returns {Promise} An error or the response from the endpoint
        */
       const wrapped = (params = {}, callback) => {
-        const id = (idParamName && (params.id || defaultIDs[idParamName])) || ''
+        const id = (idParamName && (String(params.id) || String(defaultIDs[idParamName]))) || ''
         const augmentedParams = R.assoc(
           'id',
           id,
@@ -598,10 +598,10 @@ module.exports = (function () {
       const consumerSecret = options.consumerSecret
       const accessToken = options.accessToken
       const defaultIDs = {
-        groupID: options.groupID,
-        userID: options.userID,
-        expenseID: options.expenseID,
-        friendID: options.friendID
+        groupID: options.group_id,
+        userID: options.user_id,
+        expenseID: options.expense_id,
+        friendID: options.friend_id
       }
       const logger = getLogger(options.logger, options.logLevel)
 
@@ -647,10 +647,10 @@ module.exports = (function () {
     }
 
     // Bonus utility method for easily making transactions from one person to one person
-    createDebt ({ from, to, amount, description, groupID }) {
+    createDebt ({ from, to, amount, description, group_id }) {
       return this.createExpense({
         description,
-        groupID,
+        group_id,
         payment: false,
         cost: amount,
         users: [
