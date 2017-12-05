@@ -6,7 +6,7 @@ module.exports = (function () {
   const isString = R.is(String)
   const isArray = R.is(Array)
   const isObject = R.is(Object)
-  const isArrayOrObject = R.anyPass(isArray, isObject)
+  const isArrayOrObject = R.anyPass([isArray, isObject])
 
   const mapToObject = R.curry((mapFn, array) => R.fromPairs(
     R.map(val => R.pair(val, mapFn(val)), array)

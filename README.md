@@ -6,7 +6,7 @@ A JavaScript SDK for the [Splitwise API](http://dev.splitwise.com/).
 
 ### Step 1: Register your Application
 
-You will need a consumer key and a consumer secret from Splitwise to use this module. Get them here: https://secure.splitwise.com/oauth_clients.
+You will need a consumer key and a consumer secret from Splitwise to use this SDK. Get them here: https://secure.splitwise.com/oauth_clients.
 
 ### Step 2: Install
 
@@ -38,16 +38,16 @@ const sw = Splitwise({
   consumerKey: 'your key here',
   consumerSecret: 'your secret here'
 })
-const groupID = '12345678'
+const group_id = '12345678'
 
 Promise.all([
-  sw.getGroup({ groupID: groupID }),
-  sw.getExpenses({ groupID: groupID }),
+  sw.getGroup({ group_id: group_id }),
+  sw.getExpenses({ group_id: group_id }),
   sw.getCurrentUser()
 ]).then(([group, expenses, me]) => sw.createDebt({
   from: group.members[0].id,
   to: me.id,
-  groupID: groupID,
+  group_id: group_id,
   description: expenses[0].description,
   amount: 100
 })).then(
@@ -74,17 +74,17 @@ This is the entry point to the package. All of the other methods are in the form
 | `accessToken` | no | Re-use an existing access token |
 | `logger` | no | Will be called with info and error messages |
 | `logLevel` | no | Set to `'error'` to only see error messages |
-| `groupID` | no | See below |
-| `userID` | no | " |
-| `expenseID` | no | " |
-| `friendID` | no | " |
+| `group_id` | no | See below |
+| `user_id` | no | " |
+| `expense_id` | no | " |
+| `friend_id` | no | " |
 
-The following parameters: `groupID`, `userID`, `expenseID`, and `friendID` can be passed in, to be used by default with all `get`/`update`/`delete` type operations. For example:
+The following parameters: `group_id`, `user_id`, `expense_id`, and `friend_id` can be passed in, to be used by default with all `get`/`update`/`delete` type operations. For example:
 
 ```javascript
 const sw = Splitwise({
   // ...
-  groupID: '12345678',
+  group_id: '12345678',
 });
 
 sw.getGroup({ id: '12345678' }).then(console.log);
@@ -94,7 +94,7 @@ sw.getGroup().then(console.log);
 
 #### Logging
 
-You can pass in a logging function to see useful debugging output. If the `logger` that is passed in has `info` or `error` properties, then `logger.info` and `logger.error` will be called with info and error messages respectively. Otherwise, `logger` will itself be called.
+You can pass in a logging function to see useful debugging output. If the `logger` that is passed in has `info` or `error` properties, then `logger.info` and `logger.error` will be called with info and error messages respectively. Otherwise, `logger` will itself be called with a string as the first argument. Therefore, for debugging purposes, `console.log` is recommended.
 
 If you only want to see logs in the case of an error, you can pass in `logLevel: 'error'`. e.g.:
 
@@ -139,7 +139,7 @@ const sw = Splitwise({
 ```
 ### `sw.createDebt({...})`
 
-Splitwises' endpoint for creating debts is a little awkward to use. If you have the common scenario of needing to create a simple debt between two individuals, this method will do just that.
+The endpoint for creating debts is a little awkward to use. If you are in the common scenario of needing to create a simple debt between two individuals, this method will do just that.
 
 ```javascript
 sw.createDebt({
@@ -147,7 +147,7 @@ sw.createDebt({
   to: '34567890',
   amount: 100,
   description: 'I am broke, please give me $100',
-  groupID: '12345678' // optional
+  group_id: '12345678' // optional
 })
 ```
 
@@ -157,7 +157,7 @@ All of the below methods should be called with an object of parameters as the fi
 
 ```javascript
 sw.verbResource({
-  resourceID: '12345678',
+  id: '12345678',
   otherParam: 'foo'
 } /*, callback */).then(
   data => doSomethingWithTheData(data)
@@ -203,7 +203,7 @@ sw.createExpense({ // :'(
   payment: 0
 })
 ```
-You will instead do:
+You can instead do:
 ```javascript
 sw.createExpense({
   users: [
@@ -216,7 +216,7 @@ sw.createExpense({
 
 ## Notes
 
-Here is a good alternative to this package: https://github.com/Dean177/splitwise-node
+Here is a potential alternative to this package: https://github.com/Dean177/splitwise-node
 
 ## License
 

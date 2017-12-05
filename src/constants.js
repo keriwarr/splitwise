@@ -14,10 +14,10 @@ module.exports = {
     SUCCESS: 'success'
   },
   ID_PARAM_NAMES: {
-    USER: 'userID',
-    GROUP: 'groupID',
-    EXPENSE: 'expenseID',
-    FRIEND: 'friendID'
+    USER: 'user_id',
+    GROUP: 'group_id',
+    EXPENSE: 'expense_id',
+    FRIEND: 'friend_id'
   },
   METHOD_VERBS: {
     GET: 'GET',
