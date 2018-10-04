@@ -197,7 +197,7 @@ Without further ado, here is the list of all available methods. In order to see 
 **NOTE**: Splitwise makes some important notes about their API that booleans and nested parameters don't work. You won't need to worry about this. That is, instead of calling:
 
 ```javascript
-sw.createExpense({ // :'(
+sw.createExpense({
   users__0__user_id: '23456789',
   users__1__users_id: '34567890',
   payment: 0
