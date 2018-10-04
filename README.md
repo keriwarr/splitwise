@@ -41,8 +41,8 @@ const sw = Splitwise({
 const group_id = '12345678'
 
 Promise.all([
-  sw.getGroup({ group_id: group_id }),
-  sw.getExpenses({ group_id: group_id }),
+  sw.getGroup({ id: group_id }),
+  sw.getExpenses({ id: group_id }),
   sw.getCurrentUser()
 ]).then(([group, expenses, me]) => sw.createDebt({
   from: group.members[0].id,
