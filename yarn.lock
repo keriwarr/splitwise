@@ -890,7 +890,7 @@ es-to-primitive@^1.1.1:
     is-date-object "^1.0.1"
     is-symbol "^1.0.1"
 
-es6-promisify@6.0.0:
+es6-promisify@^6.0.0:
   version "6.0.0"
   resolved "https://registry.yarnpkg.com/es6-promisify/-/es6-promisify-6.0.0.tgz#b526a75eaa5ca600e960bf3d5ad98c40d75c7203"
 
@@ -1585,7 +1585,7 @@ http-signature@~1.2.0:
     jsprim "^1.2.2"
     sshpk "^1.7.0"
 
-husky@1.1.1:
+husky@^1.1.1:
   version "1.1.1"
   resolved "https://registry.yarnpkg.com/husky/-/husky-1.1.1.tgz#7179043184f68a4d1ffc975cbd1c6132ef1fd7b3"
   dependencies:
@@ -3583,7 +3583,7 @@ standard-engine@~9.0.0:
     minimist "^1.1.0"
     pkg-conf "^2.0.0"
 
-standard-markdown@5.0.1:
+standard-markdown@^5.0.1:
   version "5.0.1"
   resolved "https://registry.yarnpkg.com/standard-markdown/-/standard-markdown-5.0.1.tgz#39598c611bfe03b2d4313df792f365544959a592"
   dependencies:
@@ -3594,7 +3594,7 @@ standard-markdown@5.0.1:
     ora "^3.0.0"
     standard "^12.0.1"
 
-standard@12.0.1, standard@^12.0.1:
+standard@^12.0.1:
   version "12.0.1"
   resolved "https://registry.yarnpkg.com/standard/-/standard-12.0.1.tgz#0fc5a8aa6c34c546c5562aae644242b24dae2e61"
   dependencies:
@@ -3878,7 +3878,7 @@ validate-npm-package-license@^3.0.1:
     spdx-correct "^3.0.0"
     spdx-expression-parse "^3.0.0"
 
-validate.js@0.12.0:
+validate.js@^0.12.0:
   version "0.12.0"
   resolved "https://registry.yarnpkg.com/validate.js/-/validate.js-0.12.0.tgz#17f989e37c192ea2f826bbf19bf4e97e6e4be68f"
 
