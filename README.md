@@ -1,5 +1,7 @@
 # splitwise
 
+[![Greenkeeper badge](https://badges.greenkeeper.io/keriwarr/splitwise.svg)](https://greenkeeper.io/)
+
 A JavaScript SDK for the [Splitwise API](http://dev.splitwise.com/).
 
 ## Quickstart

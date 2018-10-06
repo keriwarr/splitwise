@@ -22,25 +22,29 @@
   },
   "scripts": {
     "lint": "bash ./scripts/pre-commit.sh",
-    "precommit": "npm run lint",
     "test": "jest"
   },
   "dependencies": {
-    "es6-promisify": "5.0.0",
+    "es6-promisify": "^6.0.0",
     "oauth": "^0.9.15",
     "querystring": "^0.2.0",
     "ramda": "^0.25.0",
-    "validate.js": "0.12.0"
+    "validate.js": "^0.12.0"
   },
   "devDependencies": {
-    "husky": "0.14.3",
+    "husky": "^1.1.1",
     "jest": "^23.6.0",
-    "standard": "10.0.3",
-    "standard-markdown": "4.0.2"
+    "standard": "^12.0.1",
+    "standard-markdown": "^5.0.1"
   },
   "standard": {
     "env": [
       "jest"
     ]
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "npm run lint"
+    }
   }
 }
