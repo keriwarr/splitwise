@@ -22,7 +22,8 @@
   },
   "scripts": {
     "lint": "bash ./scripts/pre-commit.sh",
-    "precommit": "npm run lint"
+    "precommit": "npm run lint",
+    "test": "jest"
   },
   "dependencies": {
     "es6-promisify": "5.0.0",
@@ -33,7 +34,13 @@
   },
   "devDependencies": {
     "husky": "0.14.3",
+    "jest": "^23.6.0",
     "standard": "10.0.3",
     "standard-markdown": "4.0.2"
+  },
+  "standard": {
+    "env": [
+      "jest"
+    ]
   }
 }
