@@ -22,7 +22,6 @@
   },
   "scripts": {
     "lint": "bash ./scripts/pre-commit.sh",
-    "precommit": "npm run lint",
     "test": "jest"
   },
   "dependencies": {
@@ -42,5 +41,10 @@
     "env": [
       "jest"
     ]
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "npm run lint"
+    }
   }
 }
