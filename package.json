@@ -18,7 +18,7 @@
   },
   "homepage": "https://github.com/keriwarr/splitwise#readme",
   "engines": {
-    "node": ">=6.0.0"
+    "node": "^6.2.2 || >=8.0.0"
   },
   "scripts": {
     "lint": "bash ./scripts/pre-commit.sh",
