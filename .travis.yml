@@ -7,3 +7,8 @@ node_js:
   - "8"
   - "9"
   - "10"
+install:
+  - yarn
+  - yarn global add codecov
+script:
+  - jest --coverage && codecov
