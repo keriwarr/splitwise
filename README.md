@@ -1,6 +1,6 @@
 # splitwise
 
-[![Greenkeeper badge](https://badges.greenkeeper.io/keriwarr/splitwise.svg)](https://greenkeeper.io/)
+[![Greenkeeper badge](https://badges.greenkeeper.io/keriwarr/splitwise.svg)](https://greenkeeper.io/) [![codecov](https://codecov.io/gh/keriwarr/splitwise/branch/master/graph/badge.svg)](https://codecov.io/gh/keriwarr/splitwise)
 
 A JavaScript SDK for the [Splitwise API](http://dev.splitwise.com/).
 
