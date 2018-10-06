@@ -593,7 +593,7 @@ module.exports = (function () {
    * @class
    */
   class Splitwise {
-    constructor (options) {
+    constructor (options = {}) {
       const consumerKey = options.consumerKey
       const consumerSecret = options.consumerSecret
       const accessToken = options.accessToken
@@ -604,6 +604,7 @@ module.exports = (function () {
         friendID: options.friend_id
       }
       const logger = getLogger(options.logger, options.logLevel)
+      const redirectURI = options.redirectURI || null;
 
       if (!consumerKey || !consumerSecret) {
         const message = 'both a consumer key, and a consumer secret must be provided'
@@ -614,9 +615,9 @@ module.exports = (function () {
       const oauth2 = new OAuth2(
         consumerKey,
         consumerSecret,
-        'https://secure.splitwise.com/',
-        null,
-        'oauth/token',
+        'https://www.splitwise.com',
+        '/oauth/authorize',
+        '/oauth/token',
         null
       )
 
@@ -644,6 +645,12 @@ module.exports = (function () {
       })
 
       this.getAccessToken = () => accessTokenPromise
+      this.getOAuthClient = () => oauth2;
+      this.setCallbackURL = (url) => {callbackUrl = url}
+      this.getAuthorizeURL = ({ redirectURI: uri = redirectURI } = {}) => oauth2.getAuthorizeUrl({
+        redirect_uri: uri,
+        response_type: 'code',
+      });
     }
 
     // Bonus utility method for easily making transactions from one person to one person

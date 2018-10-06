@@ -22,9 +22,6 @@ module.exports = (function () {
   }
 
   const getLogThreshold = (providedThreshold) => {
-    if (!isString(providedThreshold)) {
-      return LOG_LEVELS.INFO
-    }
     const threshold = R.find(levelName => (
       levelName.toLowerCase() === providedThreshold.toLowerCase()
     ), LOG_LEVEL_NAMES)
