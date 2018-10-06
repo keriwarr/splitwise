@@ -3,7 +3,7 @@ module.exports = (function () {
 
   const { OAuth2 } = require('oauth')
   const querystring = require('querystring')
-  const promisify = require('es6-promisify')
+  const {promisify} = require('es6-promisify')
   const validate = require('validate.js')
 
   const R = require('./ramda.js')
@@ -235,7 +235,7 @@ module.exports = (function () {
    * @param {boolean} options.shouldThrow - Rather than returning a promise, will throw an error
    * @returns {Promise.<Error>} A promise that has been rejected with an Error
    */
-  const fail = ({context, message, callback, logger, shouldThrow} = {}) => {
+  const fail = ({ context, message, callback, logger, shouldThrow } = {}) => {
     const contextPrefix = context ? `${context} - ` : ''
     const errorMessage = `${contextPrefix}${message}`
     if (logger) {
@@ -258,7 +258,7 @@ module.exports = (function () {
    */
   const getOAuthRequestWrapper = (logger, oauth2) => {
     // eslint-disable-next-line no-underscore-dangle
-    const oAuthRequest = promisify(oauth2._request, { thisArg: oauth2 })
+    const oAuthRequest = promisify(oauth2._request.bind(oauth2))
     const oAuthRequestWrapperFail = message => fail({
       logger,
       message,
@@ -305,7 +305,7 @@ module.exports = (function () {
    * @returns A method for making requests to Splitwise
    */
   const getSplitwiseRequest = (logger, oauth2) => {
-    const oAuthGet = promisify(oauth2.get, { thisArg: oauth2 })
+    const oAuthGet = promisify(oauth2.get.bind(oauth2))
     const splitwiseRequestFail = message => fail({
       logger,
       message,
@@ -378,9 +378,7 @@ module.exports = (function () {
    */
   const getAccessTokenPromise = (logger, oauth2) => {
     const getOAuthAccessToken = promisify(
-      oauth2.getOAuthAccessToken,
-      { thisArg: oauth2 }
-    )
+      oauth2.getOAuthAccessToken.bind(oauth2))
 
     const accessTokenPromise = getOAuthAccessToken('', { grant_type: 'client_credentials' })
 
@@ -459,7 +457,7 @@ module.exports = (function () {
       if (!methodName) {
         endpointMethodGeneratorFail('a method name must be provided')
       }
-      const wrappedFail = ({message, callback}) => fail({
+      const wrappedFail = ({ message, callback }) => fail({
         logger,
         message,
         callback,
@@ -503,14 +501,14 @@ module.exports = (function () {
         )
 
         // Ensure the provided params are valid
-        const allErrors = validate(augmentedParams, augmentedConstraints, {fullMessages: false})
+        const allErrors = validate(augmentedParams, augmentedConstraints, { fullMessages: false })
         if (allErrors) {
           const flattenedErrors = R.flatten(R.toPairs(allErrors).map(([argument, errors]) => {
             return errors.map(error => `\`${argument}\` ${error}`)
           }))
 
           const message = makeErrorMessage(flattenedErrors)
-          return wrappedFail({message, callback})
+          return wrappedFail({ message, callback })
         }
 
         let url = `${endpoint}/${id}`
@@ -543,7 +541,7 @@ module.exports = (function () {
             (result.success === false) && 'request was unsuccessful'
           )
           if (message) {
-            return wrappedFail({message, callback})
+            return wrappedFail({ message, callback })
           }
           logger({ message: `${methodName} - successfully made request` })
           return result
