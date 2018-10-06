@@ -3,7 +3,7 @@ module.exports = (function () {
 
   const { OAuth2 } = require('oauth')
   const querystring = require('querystring')
-  const promisify = require('es6-promisify')
+  const {promisify} = require('es6-promisify')
   const validate = require('validate.js')
 
   const R = require('./ramda.js')
@@ -258,7 +258,7 @@ module.exports = (function () {
    */
   const getOAuthRequestWrapper = (logger, oauth2) => {
     // eslint-disable-next-line no-underscore-dangle
-    const oAuthRequest = promisify(oauth2._request, { thisArg: oauth2 })
+    const oAuthRequest = promisify(oauth2._request.bind(oauth2))
     const oAuthRequestWrapperFail = message => fail({
       logger,
       message,
@@ -305,7 +305,7 @@ module.exports = (function () {
    * @returns A method for making requests to Splitwise
    */
   const getSplitwiseRequest = (logger, oauth2) => {
-    const oAuthGet = promisify(oauth2.get, { thisArg: oauth2 })
+    const oAuthGet = promisify(oauth2.get.bind(oauth2))
     const splitwiseRequestFail = message => fail({
       logger,
       message,
@@ -378,9 +378,7 @@ module.exports = (function () {
    */
   const getAccessTokenPromise = (logger, oauth2) => {
     const getOAuthAccessToken = promisify(
-      oauth2.getOAuthAccessToken,
-      { thisArg: oauth2 }
-    )
+      oauth2.getOAuthAccessToken.bind(oauth2))
 
     const accessTokenPromise = getOAuthAccessToken('', { grant_type: 'client_credentials' })
 
