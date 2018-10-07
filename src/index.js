@@ -1,1 +1,1 @@
-module.exports = require('./splitwise.js')
+module.exports = require('./splitwise.js');
