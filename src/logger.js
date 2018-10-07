@@ -1,56 +1,89 @@
-module.exports = (function () {
-  'use script'
+'use script';
 
-  const R = require('./ramda.js')
-  const { isString, mapToObject } = require('./utils.js')
+const R = require('./ramda.js');
+const { isString } = require('./utils.js');
 
-  const LOG_LEVELS = {
-    INFO: 'Info',
-    ERROR: 'Error'
+const LOG_LEVELS = {
+  ERROR: 'error',
+  WARN: 'warn',
+  INFO: 'info',
+  VERBOSE: 'verbose',
+  DEBUG: 'debug',
+  SILLY: 'silly',
+};
+
+const LOG_LEVEL_NAMES = R.values(LOG_LEVELS);
+
+const getLevelRank = (level) => {
+  switch (level) {
+    case LOG_LEVELS.ERROR:
+      return 0;
+    case LOG_LEVELS.WARN:
+      return 1;
+    case LOG_LEVELS.INFO:
+      return 2;
+    case LOG_LEVELS.VERBOSE:
+      return 3;
+    case LOG_LEVELS.DEBUG:
+      return 4;
+    case LOG_LEVELS.SILLY:
+      return 5;
+    default:
+      return 0;
   }
+};
 
-  const LOG_LEVEL_NAMES = R.values(LOG_LEVELS)
-
-  const LEVEL_METHOD_NAMES = {
-    [LOG_LEVELS.INFO]: 'info',
-    [LOG_LEVELS.ERROR]: 'error'
-  }
-
-  const LEVEL_RANK = {
-    [LOG_LEVELS.INFO]: 0,
-    [LOG_LEVELS.ERROR]: 1
-  }
-
-  const getLogThreshold = (providedThreshold) => {
-    if (!isString(providedThreshold)) {
-      return LOG_LEVELS.INFO
+const getLoggerMethod = (logger, level) => {
+  const loggerProperty = (() => {
+    switch (level) {
+      case LOG_LEVELS.ERROR:
+        return logger.error;
+      case LOG_LEVELS.WARN:
+        return logger.warn;
+      case LOG_LEVELS.INFO:
+        return logger.info;
+      case LOG_LEVELS.VERBOSE:
+        return logger.verbose;
+      case LOG_LEVELS.DEBUG:
+        return logger.debug;
+      case LOG_LEVELS.SILLY:
+        return logger.silly;
+      default:
+        return null;
     }
-    const threshold = R.find(levelName => (
-      levelName.toLowerCase() === providedThreshold.toLowerCase()
-    ), LOG_LEVEL_NAMES)
+  })();
 
-    return threshold || LOG_LEVELS.INFO
+  if (loggerProperty) {
+    return loggerProperty;
   }
 
-  const getLogger = (logger, providedLevel) => {
-    if (!logger) {
-      return () => { }
-    }
-    const thresholdLevel = getLogThreshold(providedLevel)
-    const levelToMethodMapping = mapToObject(
-      levelName => (
-        logger[LEVEL_METHOD_NAMES[levelName]] ||
-        (message => logger(`${levelName}: ${message}`))
-      ),
-      LOG_LEVEL_NAMES
-    )
+  return message => logger(`${level}: ${message}`);
+};
 
-    return ({ level = LOG_LEVELS.INFO, message }) => {
-      if (levelToMethodMapping[level] && LEVEL_RANK[level] >= LEVEL_RANK[thresholdLevel]) {
-        levelToMethodMapping[level](message)
-      }
-    }
+const getLogThreshold = (providedThreshold) => {
+  if (!isString(providedThreshold)) {
+    return LOG_LEVELS.INFO;
   }
+  const threshold = R.find(
+    levelName => levelName.toLowerCase() === providedThreshold.toLowerCase(),
+    LOG_LEVEL_NAMES
+  );
 
-  return { LOG_LEVELS, getLogger }
-}())
+  return threshold || LOG_LEVELS.INFO;
+};
+
+const getLogger = (logger, providedLevel) => {
+  if (!logger) {
+    return () => {};
+  }
+  const thresholdLevel = getLogThreshold(providedLevel);
+
+  return ({ level = LOG_LEVELS.INFO, message }) => {
+    if (getLoggerMethod(level) && getLevelRank(level) >= getLevelRank(thresholdLevel)) {
+      getLoggerMethod(level)(message);
+    }
+  };
+};
+
+module.exports.LOG_LEVELS = LOG_LEVELS;
+module.exports.getLogger = getLogger;
