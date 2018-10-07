@@ -11,18 +11,18 @@ module.exports = {
     FRIENDS: 'friends',
     FRIEND: 'friend',
     NOTIFICATIONS: 'notifications',
-    SUCCESS: 'success'
+    SUCCESS: 'success',
   },
   ID_PARAM_NAMES: {
     USER: 'user_id',
     GROUP: 'group_id',
     EXPENSE: 'expense_id',
-    FRIEND: 'friend_id'
+    FRIEND: 'friend_id',
   },
   METHOD_VERBS: {
     GET: 'GET',
     POST: 'POST',
     PUT: 'PUT',
-    DELETE: 'DELETE'
-  }
-}
+    DELETE: 'DELETE',
+  },
+};
