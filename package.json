@@ -9,7 +9,9 @@
   },
   "keywords": [
     "splitwise",
-    "Splitwise"
+    "javascript-sdk",
+    "splitwise-sdk",
+    "sdk"
   ],
   "author": "Keri Warr",
   "license": "MIT",
@@ -39,5 +41,8 @@
     "eslint-plugin-security": "^1.4.0",
     "jest": "^23.6.0",
     "prettier-eslint": "^8.8.2"
-  }
+  },
+  "files": [
+    "src"
+  ]
 }
