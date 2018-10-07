@@ -1,5 +1,10 @@
 sudo: false
 language: node_js
+cache:
+  directories:
+    - ~/.npm
+notifications:
+  email: false
 node_js:
   - "node"
   - "lts/*"
@@ -11,3 +16,8 @@ install:
   - yarn global add codecov
 script:
   - jest --coverage && codecov
+after_success:
+  - yarn run travis-deploy-once "yarn run semantic-release"
+branches:
+  except:
+    - /^v\d+\.\d+\.\d+$/
