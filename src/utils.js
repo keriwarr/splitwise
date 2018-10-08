@@ -52,9 +52,11 @@ const getSplitwiseErrors = (error) => {
     }
   }
 
-  return R.flatten([error.message, error.error, error.data, R.values(error.errors)])
-    .filter(e => !!e)
-    .map(getSplitwiseErrors);
+  return R.flatten(
+    R.flatten([error.message, error.error, error.data, R.values(error.errors)])
+      .filter(e => !!e)
+      .map(getSplitwiseErrors)
+  );
 };
 
 module.exports.isString = isString;

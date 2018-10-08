@@ -598,7 +598,7 @@ const getEndpointMethodGenerator = (logger, accessTokenPromise, defaultIDs, oaut
  * @class
  */
 class Splitwise {
-  constructor(options) {
+  constructor(options = {}) {
     const { consumerKey, consumerSecret, accessToken } = options;
     const defaultIDs = {
       groupID: options.group_id,
@@ -655,7 +655,7 @@ class Splitwise {
     amount,
     description,
     group_id, // eslint-disable-line camelcase
-  }) {
+  } = {}) {
     return this.createExpense({
       description,
       group_id,

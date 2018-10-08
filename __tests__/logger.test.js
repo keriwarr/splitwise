@@ -17,7 +17,7 @@ describe('getLogger', () => {
     const logger = getLogger(wrappedMockLogger, LOG_LEVELS.ERROR);
 
     logger({ level: LOG_LEVELS.INFO, message: errorMessage });
-    expect(mockLogger).toHaveBeenCalledTimes(0);
+    expect(mockLogger).not.toHaveBeenCalled();
 
     logger({ level: LOG_LEVELS.ERROR, message: errorMessage });
     expect(mockLogger).toHaveBeenCalledTimes(1);
@@ -64,7 +64,7 @@ describe('getLogger', () => {
     logger({ level: LOG_LEVELS.ERROR, message: errorMessage });
     expect(mockErrorLogger).toHaveBeenCalledTimes(1);
     expect(mockErrorLogger).toHaveBeenLastCalledWith([`${errorMessage}`]);
-    expect(mockInfoLogger).toHaveBeenCalledTimes(0);
+    expect(mockInfoLogger).not.toHaveBeenCalled();
 
     logger({ level: LOG_LEVELS.INFO, message: errorMessage });
     expect(mockErrorLogger).toHaveBeenCalledTimes(1);
@@ -85,7 +85,7 @@ describe('getLogger', () => {
     const logger = getLogger(wrappedMockLogger, LOG_LEVELS.INFO);
 
     logger({ level: 'invalid', message: errorMessage });
-    expect(mockLogger).toHaveBeenCalledTimes(0);
+    expect(mockLogger).not.toHaveBeenCalled();
 
     logger({ level: LOG_LEVELS.ERROR, message: errorMessage });
     expect(mockLogger).toHaveBeenCalledTimes(1);
