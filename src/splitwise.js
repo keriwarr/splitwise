@@ -6,7 +6,9 @@ const validate = require('validate.js');
 const R = require('./ramda.js');
 const { LOG_LEVELS, getLogger } = require('./logger.js');
 const { splitwisifyParameters, getSplitwiseErrors } = require('./utils.js');
-const { METHOD_VERBS, PROP_NAMES, ID_PARAM_NAMES, API_URL } = require('./constants.js');
+const {
+  METHOD_VERBS, PROP_NAMES, ID_PARAM_NAMES, API_URL,
+} = require('./constants.js');
 
 const METHODS = {
   TEST: {
@@ -232,7 +234,9 @@ const METHODS = {
  * @param {boolean} options.shouldThrow - Rather than returning a promise, will throw an error
  * @returns {Promise.<Error>} A promise that has been rejected with an Error
  */
-const fail = ({ context, message, callback, logger, shouldThrow } = {}) => {
+const fail = ({
+  context, message, callback, logger, shouldThrow,
+} = {}) => {
   const contextPrefix = context ? `${context} - ` : '';
   const errorMessage = `${contextPrefix}${message}`;
   if (logger) {
@@ -256,12 +260,11 @@ const fail = ({ context, message, callback, logger, shouldThrow } = {}) => {
 const getOAuthRequestWrapper = (logger, oauth2) => {
   // eslint-disable-next-line no-underscore-dangle
   const oAuthRequest = promisify(oauth2._request.bind(oauth2));
-  const oAuthRequestWrapperFail = message =>
-    fail({
-      logger,
-      message,
-      context: 'oAuthRequestWrapper',
-    });
+  const oAuthRequestWrapperFail = message => fail({
+    logger,
+    message,
+    context: 'oAuthRequestWrapper',
+  });
 
   /**
    * Make an oauth request
@@ -275,9 +278,6 @@ const getOAuthRequestWrapper = (logger, oauth2) => {
     if (!url) {
       return oAuthRequestWrapperFail('a URL must be provided');
     }
-    if (!METHOD_VERBS[verb]) {
-      return oAuthRequestWrapperFail('unknown http verb');
-    }
     if (!accessToken) {
       return oAuthRequestWrapperFail('an access token must be provided');
     }
@@ -290,7 +290,7 @@ const getOAuthRequestWrapper = (logger, oauth2) => {
         Authorization: oauth2.buildAuthHeader(accessToken),
       },
       querystring.stringify(data),
-      null,
+      null
     );
   };
 
@@ -304,19 +304,18 @@ const getOAuthRequestWrapper = (logger, oauth2) => {
  */
 const getSplitwiseRequest = (logger, oauth2) => {
   const oAuthGet = promisify(oauth2.get.bind(oauth2));
-  const splitwiseRequestFail = message =>
-    fail({
-      logger,
-      message,
-      context: 'splitwiseRequest',
-    });
+  const splitwiseRequestFail = message => fail({
+    logger,
+    message,
+    context: 'splitwiseRequest',
+  });
 
   /**
    * Make a request to splitwise
    * @param {string} endpoint - The endpoint to send a request to
    * @returns {Promise} The data returned from Splitwise
    */
-  const splitwiseRequest = endpoint => {
+  const splitwiseRequest = (endpoint) => {
     if (!endpoint) {
       return splitwiseRequestFail('an endpoint must be specified');
     }
@@ -334,12 +333,11 @@ const getSplitwiseRequest = (logger, oauth2) => {
  */
 const getSplitwiseRequestWithData = (logger, oauth2) => {
   const oAuthRequestWrapper = getOAuthRequestWrapper(logger, oauth2);
-  const splitwiseRequestWithDataFail = message =>
-    fail({
-      logger,
-      message,
-      context: 'splitwiseRequestWithData',
-    });
+  const splitwiseRequestWithDataFail = message => fail({
+    logger,
+    message,
+    context: 'splitwiseRequestWithData',
+  });
 
   /**
    * Make a request with data to Splitwise
@@ -356,13 +354,12 @@ const getSplitwiseRequestWithData = (logger, oauth2) => {
       return splitwiseRequestWithDataFail('data must be provided');
     }
 
-    return accessToken =>
-      oAuthRequestWrapper(
-        `${API_URL}${endpoint}`,
-        verb,
-        splitwisifyParameters(data), // un-nest data, and convert bools into numbers
-        accessToken,
-      ).then(JSON.parse);
+    return accessToken => oAuthRequestWrapper(
+      `${API_URL}${endpoint}`,
+      verb,
+      splitwisifyParameters(data), // un-nest data, and convert bools into numbers
+      accessToken
+    ).then(JSON.parse);
   };
 
   return splitwiseRequestWithData;
@@ -383,15 +380,16 @@ const getAccessTokenPromise = (logger, oauth2) => {
     () => {
       logger({ message: 'successfully aquired access token' });
     },
-    () => {},
+    () => {}
   );
 
-  const handledAccessToken = accessTokenPromise.catch(error => {
+  const handledAccessToken = accessTokenPromise.catch((error) => {
     const data = (() => {
       try {
         return JSON.parse(error.data);
-      } catch (e) {}
-      return null;
+      } catch (e) {
+        return null;
+      }
     })();
     const reason = (() => {
       if (data && data.error === 'invalid_client') {
@@ -412,6 +410,21 @@ const getAccessTokenPromise = (logger, oauth2) => {
   return handledAccessToken;
 };
 
+const getDefaultId = (defaultIDs, idType) => {
+  switch (idType) {
+    case 'group_id':
+      return defaultIDs.group_id;
+    case 'user_id':
+      return defaultIDs.user_id;
+    case 'expense_id':
+      return defaultIDs.expense_id;
+    case 'friend_id':
+      return defaultIDs.friend_id;
+    default:
+      return null;
+  }
+};
+
 /**
  * @param {Function} logger - The logger provided by getLogger
  * @param {Promise.<string>} accessTokenPromise - A promise for a Splitwise access token
@@ -422,13 +435,12 @@ const getAccessTokenPromise = (logger, oauth2) => {
 const getEndpointMethodGenerator = (logger, accessTokenPromise, defaultIDs, oauth2) => {
   const splitwiseRequest = getSplitwiseRequest(logger, oauth2);
   const splitwiseRequestWithData = getSplitwiseRequestWithData(logger, oauth2);
-  const endpointMethodGeneratorFail = message =>
-    fail({
-      logger,
-      message,
-      shouldThrow: true,
-      context: 'endpointMethodGenerator',
-    });
+  const endpointMethodGeneratorFail = message => fail({
+    logger,
+    message,
+    shouldThrow: true,
+    context: 'endpointMethodGenerator',
+  });
 
   /**
    * @param {string} verb - Which http verb to use
@@ -452,26 +464,22 @@ const getEndpointMethodGenerator = (logger, accessTokenPromise, defaultIDs, oaut
     if (!endpoint) {
       endpointMethodGeneratorFail('an endpoint must be specified');
     }
-    if (!METHOD_VERBS[verb]) {
-      endpointMethodGeneratorFail('unknown http verb');
-    }
     if (!methodName) {
       endpointMethodGeneratorFail('a method name must be provided');
     }
-    const wrappedFail = ({ message, callback }) =>
-      fail({
-        logger,
-        message,
-        callback,
-        context: methodName,
-      });
+    const wrappedFail = ({ message, callback }) => fail({
+      logger,
+      message,
+      callback,
+      context: methodName,
+    });
     const augmentedConstraints = (() => {
       if (idParamName) {
         return R.assoc('id', { presence: { allowEmpty: false } }, constraints);
       }
       return constraints;
     })();
-    const makeErrorMessage = errors => {
+    const makeErrorMessage = (errors) => {
       if (errors.length === 0) {
         return '';
       }
@@ -480,7 +488,7 @@ const getEndpointMethodGenerator = (logger, accessTokenPromise, defaultIDs, oaut
       }
       return errors.reduce(
         (messageSoFar, nextError) => `${messageSoFar}\n - ${nextError}`,
-        `${methodName}:`,
+        `${methodName}:`
       );
     };
 
@@ -492,16 +500,14 @@ const getEndpointMethodGenerator = (logger, accessTokenPromise, defaultIDs, oaut
      * @returns {Promise} An error or the response from the endpoint
      */
     const wrapped = (params = {}, callback) => {
-      const id = (idParamName && (String(params.id) || String(defaultIDs[idParamName]))) || '';
+      const id = (idParamName && (String(params.id) || String(getDefaultId(defaultIDs, idParamName)))) || '';
       const augmentedParams = R.assoc('id', id, params);
 
       // Ensure the provided params are valid
       const allErrors = validate(augmentedParams, augmentedConstraints, { fullMessages: false });
       if (allErrors) {
         const flattenedErrors = R.flatten(
-          R.toPairs(allErrors).map(([argument, errors]) =>
-            errors.map(error => `\`${argument}\` ${error}`),
-          ),
+          R.toPairs(allErrors).map(([argument, errors]) => errors.map(error => `\`${argument}\` ${error}`))
         );
 
         const message = makeErrorMessage(flattenedErrors);
@@ -516,7 +522,7 @@ const getEndpointMethodGenerator = (logger, accessTokenPromise, defaultIDs, oaut
         () => {
           logger({ message: `${methodName} - making request` });
         },
-        () => {},
+        () => {}
       );
 
       // Make the request
@@ -530,27 +536,26 @@ const getEndpointMethodGenerator = (logger, accessTokenPromise, defaultIDs, oaut
         resultPromise = resultPromise.then(splitwiseRequest(url));
       } else {
         resultPromise = resultPromise.then(
-          splitwiseRequestWithData(url, verb, R.pick(paramNames, params)),
+          splitwiseRequestWithData(url, verb, R.pick(paramNames, params))
         );
       }
 
       // Handle any errors
       resultPromise = resultPromise.then(
-        result => {
+        (result) => {
           const errors = getSplitwiseErrors(R.pick(['error', 'errors'], result));
-          const message =
-            makeErrorMessage(errors) || (result.success === false && 'request was unsuccessful');
+          const message = makeErrorMessage(errors) || (result.success === false && 'request was unsuccessful');
           if (message) {
             return wrappedFail({ message, callback });
           }
           logger({ message: `${methodName} - successfully made request` });
           return result;
         },
-        error => {
+        (error) => {
           const errors = getSplitwiseErrors(error);
           const message = makeErrorMessage(errors) || 'request was unsuccessful';
           return wrappedFail({ message, callback });
-        },
+        }
       );
 
       // Return data, not nested within an object
@@ -566,12 +571,12 @@ const getEndpointMethodGenerator = (logger, accessTokenPromise, defaultIDs, oaut
       // Call the callback if it's given
       if (callback) {
         resultPromise.then(
-          result => {
+          (result) => {
             callback(null, result);
           },
-          error => {
+          (error) => {
             callback(error, null);
-          },
+          }
         );
       }
 
@@ -594,9 +599,7 @@ const getEndpointMethodGenerator = (logger, accessTokenPromise, defaultIDs, oaut
  */
 class Splitwise {
   constructor(options) {
-    const consumerKey = options.consumerKey;
-    const consumerSecret = options.consumerSecret;
-    const accessToken = options.accessToken;
+    const { consumerKey, consumerSecret, accessToken } = options;
     const defaultIDs = {
       groupID: options.group_id,
       userID: options.user_id,
@@ -617,7 +620,7 @@ class Splitwise {
       'https://secure.splitwise.com/',
       null,
       'oauth/token',
-      null,
+      null
     );
 
     const accessTokenPromise = (() => {
@@ -633,12 +636,12 @@ class Splitwise {
       logger,
       accessTokenPromise,
       defaultIDs,
-      oauth2,
+      oauth2
     );
 
     // Each of the provided methods is generated from an element in METHODS
     // and added as an instance method
-    R.values(METHODS).forEach(method => {
+    R.values(METHODS).forEach((method) => {
       this[method.methodName] = generateEndpointMethod(method);
     });
 
@@ -646,7 +649,13 @@ class Splitwise {
   }
 
   // Bonus utility method for easily making transactions from one person to one person
-  createDebt({ from, to, amount, description, group_id }) {
+  createDebt({
+    from,
+    to,
+    amount,
+    description,
+    group_id, // eslint-disable-line camelcase
+  }) {
     return this.createExpense({
       description,
       group_id,
