@@ -19,5 +19,5 @@ script:
 after_success:
   - yarn run travis-deploy-once "yarn run semantic-release"
 branches:
-  except:
-    - /^v\d+\.\d+\.\d+$/
+  only:
+    - master
