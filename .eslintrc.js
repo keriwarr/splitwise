@@ -1,12 +1,8 @@
 module.exports = {
-  extends: [
-    'airbnb-base',
-    'plugin:node/recommended',
-    'plugin:security/recommended',
-  ],
+  extends: ['airbnb-base', 'plugin:node/recommended', 'plugin:security/recommended'],
   plugins: ['prettier', 'security'],
   parserOptions: {
-    ecmaVersion: 6,
+    ecmaVersion: 8,
     sourceType: 'module',
     ecmaFeatures: {
       impliedStrict: true,

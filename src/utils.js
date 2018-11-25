@@ -3,6 +3,7 @@ const R = require('./ramda.js');
 const isString = R.is(String);
 const isArray = R.is(Array);
 const isObject = R.is(Object);
+const isFunction = R.is(Function);
 const isArrayOrObject = R.anyPass([isArray, isObject]);
 
 const convertBooleans = R.map((val) => {
@@ -51,11 +52,14 @@ const getSplitwiseErrors = (error) => {
     }
   }
 
-  return R.flatten([error.message, error.error, error.data, R.values(error.errors)])
-    .filter(e => !!e)
-    .map(getSplitwiseErrors);
+  return R.flatten(
+    R.flatten([error.message, error.error, error.data, R.values(error.errors)])
+      .filter(e => !!e)
+      .map(getSplitwiseErrors)
+  );
 };
 
 module.exports.isString = isString;
+module.exports.isFunction = isFunction;
 module.exports.splitwisifyParameters = splitwisifyParameters;
 module.exports.getSplitwiseErrors = getSplitwiseErrors;
