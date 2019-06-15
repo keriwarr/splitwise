@@ -6871,9 +6871,10 @@ validate-npm-package-name@^3.0.0, validate-npm-package-name@~3.0.0:
   dependencies:
     builtins "^1.0.3"
 
-validate.js@^0.12.0:
-  version "0.12.0"
-  resolved "https://registry.yarnpkg.com/validate.js/-/validate.js-0.12.0.tgz#17f989e37c192ea2f826bbf19bf4e97e6e4be68f"
+validate.js@^0.13.0:
+  version "0.13.0"
+  resolved "https://registry.yarnpkg.com/validate.js/-/validate.js-0.13.0.tgz#d64a64e3bbc7da659a9c95b5739f495b3f85f029"
+  integrity sha512-axb77X2uu71Rpyx5nxOSrobuQ2N6TBjXQsifyNBBgbt31SH6T2Zi7DmCmaX0kiU09lSnhq/gFRQa/OzYJz8olw==
 
 verror@1.10.0:
   version "1.10.0"
