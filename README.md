@@ -218,6 +218,8 @@ sw.createExpense({
 
 ## Notes
 
+This SDK only enables accessing the user data of the developer (owner) of the application for the linked key/secret.  If you need a solution to enable users to access their own data for use in your app or service you will need to look elsewhere.
+
 Here is a potential alternative to this package: https://github.com/Dean177/splitwise-node
 
 ## License
