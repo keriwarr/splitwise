@@ -120,6 +120,7 @@ const METHODS = {
       'updated_before',
       'limit',
       'offset',
+      'visible',
     ],
   },
   GET_EXPENSE: {
