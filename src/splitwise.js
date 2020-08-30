@@ -656,12 +656,14 @@ class Splitwise {
     amount,
     description,
     group_id, // eslint-disable-line camelcase
+    date,
   } = {}) {
     return this.createExpense({
       description,
       group_id,
       payment: false,
       cost: amount,
+      date,
       users: [
         {
           user_id: from,
