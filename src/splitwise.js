@@ -218,6 +218,12 @@ const METHODS = {
     propName: PROP_NAMES.NOTIFICATIONS,
     paramNames: ['updated_after', 'limit'],
   },
+  CREATE_COMMENT: {
+    endpoint: 'create_comment',
+    methodName: 'createComment',
+    verb: METHOD_VERBS.POST,
+    paramNames: ['expense_id', 'content'],
+  },
   GET_MAIN_DATA: {
     endpoint: 'get_main_data',
     methodName: 'getMainData',
@@ -637,7 +643,7 @@ class Splitwise {
       null
     );
 
-    this.generateState = () => {
+    const generateState = () => {
       this.state = crypto.randomBytes(20).toString('hex');
       return this.state;
     }
@@ -647,20 +653,20 @@ class Splitwise {
       return oauth2.getAuthorizeUrl({
         redirect_uri,
         scope: '',
-        state: this.generateState(),
+        state: generateState(),
         response_type: 'code'
       });
     }
 
-    this.verifyState = state => {
+    const verifyState = state => {
       if (!useOauth2) return true;
       return state === this.state;
     }
 
-    this.getAccessTokenFromAuthCode = () => {
+    const getAccessTokenFromAuthCode = () => {
       return new Promise((resolve, reject) => {
         if(!this.authCode) 
-          return reject(`No auth code generated yet. Visit ${this.getAuthorizationUrl()} and login. You need a callback url in your project as mentioned in callback url in your registered splitwise app. Then call \`getAccessTokenFromAuthCode()\` to register the access token.`);
+          return reject(`No auth code generated yet. Visit ${this.getAuthorizationUrl()} and login. You need a callback url in your project as mentioned in callback url in your registered splitwise app. Then call \`getAccessToken()\` to register the access token.`);
         if(this.accessToken) return resolve(this.accessToken);
         return oauth2.getOAuthAccessToken(this.authCode, {
           code: this.authCode,
@@ -693,7 +699,7 @@ class Splitwise {
 
     const generateEndpointMethod = getEndpointMethodGenerator(
       logger,
-      useOauth2 ? this.getAccessTokenFromAuthCode : accessTokenPromise,
+      useOauth2 ? getAccessTokenFromAuthCode : accessTokenPromise,
       defaultIDs,
       oauth2
     );
@@ -705,10 +711,10 @@ class Splitwise {
     });
     if (useOauth2) {
       this.getAccessToken = (code, state) => {
-        if (!this.verifyState(state))
+        if (!verifyState(state))
           return Promise.reject(`State verification failed: ${state}`);
         this.authCode = code;
-        return this.getAccessTokenFromAuthCode();
+        return getAccessTokenFromAuthCode();
       }
     }
     else 
