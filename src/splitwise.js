@@ -608,11 +608,11 @@ const getEndpointMethodGenerator = (logger, accessTokenPromise, defaultIDs, oaut
 class Splitwise {
   constructor(options = {}) {
 
-    const { consumerKey, consumerSecret, accessToken, useOauth2 = false, redirect_uri = null } = options;
+    const { consumerKey, consumerSecret, accessToken, grant_type = "client_credentials", redirect_uri = null, isAuthorizationCode = grant_type === "authorization_code" } = options;
     const SPLITWISE_ENDPOINTS = {
-      "baseUrl": 'https://secure.splitwise.com/',
-      "authorizeUrl": 'oauth/authorize',
-      "accessTokenUrl": 'oauth/token',
+      "path": 'https://secure.splitwise.com/',
+      "authorizePath": 'oauth/authorize',
+      "accessTokenPath": 'oauth/token',
     }
     const defaultIDs = {
       groupID: options.group_id,
@@ -627,8 +627,8 @@ class Splitwise {
       logger({ level: LOG_LEVELS.ERROR, message });
       throw new Error(message);
     }
-    // check if no redirect url supplied to useOauth2
-    if (useOauth2 && !redirect_uri) {
+    // check if no redirect url supplied to isAuthorizationCode
+    if (isAuthorizationCode && !redirect_uri) {
       const message = 'Redirect url required for OAuth2';
       logger({ level: LOG_LEVELS.ERROR, message });
       throw new Error(message);
@@ -637,9 +637,9 @@ class Splitwise {
     const oauth2 = new OAuth2(
       consumerKey,
       consumerSecret,
-      SPLITWISE_ENDPOINTS.baseUrl,
-      useOauth2 ? SPLITWISE_ENDPOINTS.authorizeUrl : null,
-      SPLITWISE_ENDPOINTS.accessTokenUrl,
+      SPLITWISE_ENDPOINTS.path,
+      isAuthorizationCode ? SPLITWISE_ENDPOINTS.authorizePath : null,
+      SPLITWISE_ENDPOINTS.accessTokenPath,
       null
     );
 
@@ -649,7 +649,7 @@ class Splitwise {
     }
 
     this.getAuthorizationUrl = () => {
-      if (!useOauth2) return "";
+      if (!isAuthorizationCode) return "";
       return oauth2.getAuthorizeUrl({
         redirect_uri,
         scope: '',
@@ -659,7 +659,7 @@ class Splitwise {
     }
 
     const verifyState = state => {
-      if (!useOauth2) return true;
+      if (!isAuthorizationCode) return true;
       return state === this.state;
     }
 
@@ -676,6 +676,7 @@ class Splitwise {
           if (err) {
             return reject(err);
           }
+          // useAuthorizationHeaderforGET attaches auth in header. Else get requests throw 401 in case of authorization_code for missing access token.
           oauth2.useAuthorizationHeaderforGET(true);
           this.accessToken = accessToken;
           return resolve(true);
@@ -684,7 +685,7 @@ class Splitwise {
     }
 
 
-    const accessTokenPromise = () => {
+    const getAccessTokenWithClientCredentials = () => {
       if (accessToken) {
         logger({ message: 'using provided access token' });
         return Promise.resolve(accessToken);
@@ -692,14 +693,14 @@ class Splitwise {
       logger({ message: 'making request for access token' });
       return getAccessTokenPromise(logger, oauth2);
     };
-    if (!useOauth2) {
-      // earlier an IIFE. But now, this is called only in case of client_credentials
-      accessTokenPromise();
+    if (!isAuthorizationCode) {
+      // earlier an IIFE. But now, this is called only in case of client_credentials. Called by default while initialising so as to acquire a token right away.
+      getAccessTokenWithClientCredentials();
     }
 
     const generateEndpointMethod = getEndpointMethodGenerator(
       logger,
-      useOauth2 ? getAccessTokenFromAuthCode : accessTokenPromise,
+      isAuthorizationCode ? getAccessTokenFromAuthCode : getAccessTokenWithClientCredentials,
       defaultIDs,
       oauth2
     );
@@ -709,7 +710,7 @@ class Splitwise {
     R.values(METHODS).forEach((method) => {
       this[method.methodName] = generateEndpointMethod(method);
     });
-    if (useOauth2) {
+    if (isAuthorizationCode) {
       this.getAccessToken = (code, state) => {
         if (!verifyState(state))
           return Promise.reject(`State verification failed: ${state}`);
@@ -718,7 +719,7 @@ class Splitwise {
       }
     }
     else 
-      this.getAccessToken = () => accessTokenPromise;
+      this.getAccessToken = () => getAccessTokenWithClientCredentials;
   }
 
   // Bonus utility method for easily making transactions from one person to one person

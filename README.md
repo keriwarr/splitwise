@@ -59,19 +59,19 @@ Promise.all([
 )
 ```
 
-## Using Oauth2.0
+## Using Authorisation code
 
 #### We strongly recommend using this beacuse of higher level of security. Reference to working of [oauth2](https://oauth.net/getting-started/).
 
-In this example, we create login using oauth2.0. 
-1. Initialise the splitwise instance with `useOauth2:true`. You will alse need a `redirect_uri` for oauth2. This will be the same as the one you used while creating your app here https://secure.splitwise.com/oauth_clients.
+In this example, we create login using authorization code
+1. Initialise the splitwise instance with `grant_type:authorization_code`. You will alse need a `redirect_uri` for this. This will be the same as the one you used while creating your app here https://secure.splitwise.com/oauth_clients.
 
 ```
 const Splitwise = require('splitwise');
 const sw = Splitwise({
   consumerKey: 'your key here',
   consumerSecret: 'your secret here',
-  useOauth2: true,
+  grant_type: 'authorization_code',
   redirect_uri: 'your redirect_uri'
 });
 ```
@@ -111,8 +111,8 @@ This is the entry point to the package. All of the other methods are in the form
 |-|-|-|
 | `consumerKey` | **yes** | Obtained by registering your application |
 | `consumerSecret` | **yes** | Obtained by registering your application |
-| `useOauth2` | no | Whether to use oauth2.0 to authenticate |
-| `redirect_uri` | no | Required for `useOauth2`. |
+| `grant_type` | no | `authorization_code` or `client_credentials`(default) |
+| `redirect_uri` | no | Required for `authorization_code`. |
 | `accessToken` | no | Re-use an existing access token |
 | `logger` | no | Will be called with info and error messages |
 | `logLevel` | no | Set to `'error'` to only see error messages |
