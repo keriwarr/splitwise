@@ -148,6 +148,7 @@ const METHODS = {
       'currency_code',
       'category_id',
       'users',
+      'split_equally'
     ],
   },
   UPDATE_EXPENSE: {
