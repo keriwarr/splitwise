@@ -73,8 +73,11 @@ const sw = Splitwise({
   consumerSecret: 'your secret here',
   grant_type: 'authorization_code',
   redirect_uri: 'your redirect_uri'
+  state: 'your state' // OPTIONAL. But we strongly recomend to have a state parameter and verify it later on as mentioned below 
 });
+// Your state can be any random string or a securely generated crypto string like this `crypto.randomBytes(20).toString('hex')`
 ```
+
 2. Get the authorization url before calling any APIs using `getAuthorizationUrl()`.
 ```
 const authUrl = sw.getAuthorizationUrl();
@@ -84,6 +87,11 @@ This url will contain a login page returned by splitwise. This url will also con
 3. Get the access token from the auth code using your callback API. Use the returned code and state to get the access token.
 ```
 app.get('/callback', (req, res) => {
+  // OPTIONAL: if you want to check the state parameter, you can do so here. We strongly recomend to do this.
+  if(req.query.state !== CONFIG.state) {
+    // CONFIG.state if the state you supplied in the splitwise constructor
+    return res.json({ status: 401, message: "Invalid state" });
+  }
   return sw.getAccessToken(req.query.code, req.query.state)
     .then(accessToken => {
       return res.json({status: 200, accessToken});
@@ -113,6 +121,7 @@ This is the entry point to the package. All of the other methods are in the form
 | `consumerSecret` | **yes** | Obtained by registering your application |
 | `grant_type` | no | `authorization_code` or `client_credentials`(default) |
 | `redirect_uri` | no | Required for `authorization_code`. |
+| `state` | no | Strongly recommended for `authorization_code`. |
 | `accessToken` | no | Re-use an existing access token |
 | `logger` | no | Will be called with info and error messages |
 | `logLevel` | no | Set to `'error'` to only see error messages |
@@ -179,6 +188,7 @@ const sw = Splitwise({
 })
 // do stuff with `sw`
 ```
+To get the Access Token in case of `grant_type=authorization_code`, you can only fetch it after you authorize the app with the authorization url. You will see an error message as `No auth code generated yet.` in this case.
 ### `sw.createDebt({...})`
 
 The endpoint for creating debts is a little awkward to use. If you are in the common scenario of needing to create a simple debt between two individuals, this method will do just that.

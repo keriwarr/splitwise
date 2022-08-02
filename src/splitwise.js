@@ -608,7 +608,7 @@ const getEndpointMethodGenerator = (logger, accessTokenPromise, defaultIDs, oaut
 class Splitwise {
   constructor(options = {}) {
 
-    const { consumerKey, consumerSecret, accessToken, grant_type = "client_credentials", redirect_uri = null, isAuthorizationCode = grant_type === "authorization_code" } = options;
+    const { consumerKey, consumerSecret, accessToken, grant_type = "client_credentials", redirect_uri = null, isAuthorizationCode = grant_type === "authorization_code", state = null } = options;
     const SPLITWISE_ENDPOINTS = {
       "path": 'https://secure.splitwise.com/',
       "authorizePath": 'oauth/authorize',
@@ -633,7 +633,7 @@ class Splitwise {
       logger({ level: LOG_LEVELS.ERROR, message });
       throw new Error(message);
     }
-
+    
     const oauth2 = new OAuth2(
       consumerKey,
       consumerSecret,
@@ -643,24 +643,14 @@ class Splitwise {
       null
     );
 
-    const generateState = () => {
-      this.state = crypto.randomBytes(20).toString('hex');
-      return this.state;
-    }
-
     this.getAuthorizationUrl = () => {
       if (!isAuthorizationCode) return "";
       return oauth2.getAuthorizeUrl({
         redirect_uri,
         scope: '',
-        state: generateState(),
+        state,
         response_type: 'code'
       });
-    }
-
-    const verifyState = state => {
-      if (!isAuthorizationCode) return true;
-      return state === this.state;
     }
 
     const getAccessTokenFromAuthCode = () => {
@@ -679,7 +669,7 @@ class Splitwise {
           // useAuthorizationHeaderforGET attaches auth in header. Else get requests throw 401 in case of authorization_code for missing access token.
           oauth2.useAuthorizationHeaderforGET(true);
           this.accessToken = accessToken;
-          return resolve(true);
+          return resolve(accessToken);
         })
       })
     }
@@ -710,16 +700,16 @@ class Splitwise {
     R.values(METHODS).forEach((method) => {
       this[method.methodName] = generateEndpointMethod(method);
     });
+    
+    // Seperate methods for authorization code and client credentials
     if (isAuthorizationCode) {
-      this.getAccessToken = (code, state) => {
-        if (!verifyState(state))
-          return Promise.reject(`State verification failed: ${state}`);
+      this.getAccessToken = code => {
         this.authCode = code;
         return getAccessTokenFromAuthCode();
       }
     }
     else 
-      this.getAccessToken = () => getAccessTokenWithClientCredentials;
+      this.getAccessToken = getAccessTokenWithClientCredentials;
   }
 
   // Bonus utility method for easily making transactions from one person to one person
