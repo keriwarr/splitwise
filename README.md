@@ -59,6 +59,52 @@ Promise.all([
 )
 ```
 
+## Using Authorisation code
+
+#### We strongly recommend using this beacuse of higher level of security. Reference to working of [oauth2](https://oauth.net/getting-started/).
+
+In this example, we create login using authorization code
+1. Initialise the splitwise instance with `grant_type:authorization_code`. You will alse need a `redirect_uri` for this. This will be the same as the one you used while creating your app here https://secure.splitwise.com/oauth_clients.
+
+```
+const Splitwise = require('splitwise');
+const sw = Splitwise({
+  consumerKey: 'your key here',
+  consumerSecret: 'your secret here',
+  grant_type: 'authorization_code',
+  redirect_uri: 'your redirect_uri'
+  state: 'your state' // OPTIONAL. But we strongly recomend to have a state parameter and verify it later on as mentioned below 
+});
+// Your state can be any random string or a securely generated crypto string like this `crypto.randomBytes(20).toString('hex')`
+```
+
+2. Get the authorization url before calling any APIs using `getAuthorizationUrl()`.
+```
+const authUrl = sw.getAuthorizationUrl();
+```
+This url will contain a login page returned by splitwise. This url will also contain the `redirect_uri`. This should match with the one you used while registering your app. After the user logs in, splitwise will call your `callback` url that you mentioned while creating your app. This will contain a state and a code in the query params.  
+
+3. Get the access token from the auth code using your callback API. Use the returned code and state to get the access token.
+```
+app.get('/callback', (req, res) => {
+  // OPTIONAL: if you want to check the state parameter, you can do so here. We strongly recomend to do this.
+  if(req.query.state !== CONFIG.state) {
+    // CONFIG.state if the state you supplied in the splitwise constructor
+    return res.json({ status: 401, message: "Invalid state" });
+  }
+  return sw.getAccessToken(req.query.code, req.query.state)
+    .then(accessToken => {
+      return res.json({status: 200, accessToken});
+    })
+    .catch(err => {
+      return res.json({status: 500, error: err});
+    })
+});
+```
+
+Now your access token is registered and it will be used while calling any APIs. You can call library APIs after this like the examples below.
+
+
 ## API Reference
 
 ### `const sw = Splitwise({...})`
@@ -73,6 +119,9 @@ This is the entry point to the package. All of the other methods are in the form
 |-|-|-|
 | `consumerKey` | **yes** | Obtained by registering your application |
 | `consumerSecret` | **yes** | Obtained by registering your application |
+| `grant_type` | no | `authorization_code` or `client_credentials`(default) |
+| `redirect_uri` | no | Required for `authorization_code`. |
+| `state` | no | Strongly recommended for `authorization_code`. |
 | `accessToken` | no | Re-use an existing access token |
 | `logger` | no | Will be called with info and error messages |
 | `logLevel` | no | Set to `'error'` to only see error messages |
@@ -139,6 +188,7 @@ const sw = Splitwise({
 })
 // do stuff with `sw`
 ```
+To get the Access Token in case of `grant_type=authorization_code`, you can only fetch it after you authorize the app with the authorization url. You will see an error message as `No auth code generated yet.` in this case.
 ### `sw.createDebt({...})`
 
 The endpoint for creating debts is a little awkward to use. If you are in the common scenario of needing to create a simple debt between two individuals, this method will do just that.
@@ -171,29 +221,29 @@ sw.verbResource({
 Without further ado, here is the list of all available methods. In order to see the specifics of which parameters should be passed in, and which data can be expected in response, please refer to the [official API documentation](http://dev.splitwise.com/), or click on the method in question.
 
  - [`sw.test()`](http://dev.splitwise.com/dokuwiki/doku.php?id=test)
- - [`sw.getCurrencies()`](http://dev.splitwise.com/dokuwiki/doku.php?id=get_currencies)
- - [`sw.getCategories()`](http://dev.splitwise.com/dokuwiki/doku.php?id=get_categories)
- - [`sw.parseSentence()`](http://dev.splitwise.com/dokuwiki/doku.php?id=parse_sentence)
- - [`sw.getCurrentUser()`](http://dev.splitwise.com/dokuwiki/doku.php?id=get_current_user)
- - [`sw.getUser()`](http://dev.splitwise.com/dokuwiki/doku.php?id=get_user)
- - [`sw.updateUser()`](http://dev.splitwise.com/dokuwiki/doku.php?id=update_user)
- - [`sw.getGroups()`](http://dev.splitwise.com/dokuwiki/doku.php?id=get_groups)
- - [`sw.getGroup()`](http://dev.splitwise.com/dokuwiki/doku.php?id=get_group)
- - [`sw.createGroup()`](http://dev.splitwise.com/dokuwiki/doku.php?id=create_group)
- - [`sw.deleteGroup()`](http://dev.splitwise.com/dokuwiki/doku.php?id=delete_group)
- - [`sw.addUserToGroup()`](http://dev.splitwise.com/dokuwiki/doku.php?id=add_user_to_group)
- - [`sw.removeUserFromGroup()`](http://dev.splitwise.com/dokuwiki/doku.php?id=remove_user_from_group)
- - [`sw.getExpenses()`](http://dev.splitwise.com/dokuwiki/doku.php?id=get_expenses)
- - [`sw.getExpense()`](http://dev.splitwise.com/dokuwiki/doku.php?id=get_expense)
- - [`sw.createExpense()`](http://dev.splitwise.com/dokuwiki/doku.php?id=create_expense)
- - [`sw.updateExpense()`](http://dev.splitwise.com/dokuwiki/doku.php?id=update_expense)
- - [`sw.deleteExpense()`](http://dev.splitwise.com/dokuwiki/doku.php?id=delete_expense)
- - [`sw.getFriends()`](http://dev.splitwise.com/dokuwiki/doku.php?id=get_friends)
- - [`sw.getFriend()`](http://dev.splitwise.com/dokuwiki/doku.php?id=get_friend)
- - [`sw.createFriend()`](http://dev.splitwise.com/dokuwiki/doku.php?id=create_friend)
- - [`sw.createFriends()`](http://dev.splitwise.com/dokuwiki/doku.php?id=create_friends)
- - [`sw.deleteFriend()`](http://dev.splitwise.com/dokuwiki/doku.php?id=delete_friend)
- - [`sw.getNotifications()`](http://dev.splitwise.com/dokuwiki/doku.php?id=get_notifications)
+ - [`sw.getCurrencies()`](https://dev.splitwise.com/#tag/other/paths/~1get_currencies/get)
+ - [`sw.getCategories()`](https://dev.splitwise.com/#tag/other/paths/~1get_categories/get)
+ - [`sw.parseSentence()`](https://dev.splitwise.com/#tag/other/paths/~1parse_sentence/post)
+ - [`sw.getCurrentUser()`](https://dev.splitwise.com/#tag/users/paths/~1get_current_user/get)
+ - [`sw.getUser()`](https://dev.splitwise.com/#tag/users/paths/~1get_user~1{id}/get)
+ - [`sw.updateUser()`](https://dev.splitwise.com/#tag/users/paths/~1update_user~1{id}/post)
+ - [`sw.getGroups()`](https://dev.splitwise.com/#tag/groups/paths/~1get_groups/get)
+ - [`sw.getGroup()`](https://dev.splitwise.com/#tag/groups/paths/~1get_group~1{id}/get)
+ - [`sw.createGroup()`](https://dev.splitwise.com/#tag/groups/paths/~1create_group/post)
+ - [`sw.deleteGroup()`](https://dev.splitwise.com/#tag/groups/paths/~1delete_group~1{id}/post)
+ - [`sw.addUserToGroup()`](https://dev.splitwise.com/#tag/groups/paths/~1add_user_to_group/post)
+ - [`sw.removeUserFromGroup()`](https://dev.splitwise.com/#tag/groups/paths/~1remove_user_from_group/post)
+ - [`sw.getExpenses()`](https://dev.splitwise.com/#tag/expenses/paths/~1get_expenses/get)
+ - [`sw.getExpense()`](https://dev.splitwise.com/#tag/expenses/paths/~1get_expense~1{id}/get)
+ - [`sw.createExpense()`](https://dev.splitwise.com/#tag/expenses/paths/~1create_expense/post)
+ - [`sw.updateExpense()`](https://dev.splitwise.com/#tag/expenses/paths/~1update_expense~1{id}/post)
+ - [`sw.deleteExpense()`](https://dev.splitwise.com/#tag/expenses/paths/~1delete_expense~1{id}/post)
+ - [`sw.getFriends()`](https://dev.splitwise.com/#tag/friends/paths/~1get_friends/get)
+ - [`sw.getFriend()`](https://dev.splitwise.com/#tag/friends/paths/~1get_friend~1{id}/get)
+ - [`sw.createFriend()`](https://dev.splitwise.com/#tag/friends/paths/~1create_friend/post)
+ - [`sw.createFriends()`](https://dev.splitwise.com/#tag/friends/paths/~1create_friends/post)
+ - [`sw.deleteFriend()`](https://dev.splitwise.com/#tag/friends/paths/~1delete_friend~1{id}/post)
+ - [`sw.getNotifications()`](https://dev.splitwise.com/#tag/notifications/paths/~1get_notifications/get)
  - `sw.getMainData()`
 
 **NOTE**: Splitwise makes some important notes about their API that booleans and nested parameters don't work. You won't need to worry about this. That is, instead of calling:

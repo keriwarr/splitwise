@@ -1,5 +1,6 @@
 const { OAuth2 } = require('oauth');
 const querystring = require('querystring');
+const crypto = require("crypto");
 const { promisify } = require('es6-promisify');
 const validate = require('validate.js');
 
@@ -218,6 +219,12 @@ const METHODS = {
     verb: METHOD_VERBS.GET,
     propName: PROP_NAMES.NOTIFICATIONS,
     paramNames: ['updated_after', 'limit'],
+  },
+  CREATE_COMMENT: {
+    endpoint: 'create_comment',
+    methodName: 'createComment',
+    verb: METHOD_VERBS.POST,
+    paramNames: ['expense_id', 'content'],
   },
   GET_MAIN_DATA: {
     endpoint: 'get_main_data',
@@ -519,7 +526,7 @@ const getEndpointMethodGenerator = (logger, accessTokenPromise, defaultIDs, oaut
 
       let url = `${endpoint}/${id}`;
       // Get the access token
-      let resultPromise = accessTokenPromise;
+      let resultPromise = accessTokenPromise();
 
       resultPromise.then(
         () => {
@@ -602,7 +609,13 @@ const getEndpointMethodGenerator = (logger, accessTokenPromise, defaultIDs, oaut
  */
 class Splitwise {
   constructor(options = {}) {
-    const { consumerKey, consumerSecret, accessToken } = options;
+
+    const { consumerKey, consumerSecret, accessToken, grant_type = "client_credentials", redirect_uri = null, isAuthorizationCode = grant_type === "authorization_code", state = null } = options;
+    const SPLITWISE_ENDPOINTS = {
+      "path": 'https://secure.splitwise.com/',
+      "authorizePath": 'oauth/authorize',
+      "accessTokenPath": 'oauth/token',
+    }
     const defaultIDs = {
       groupID: options.group_id,
       userID: options.user_id,
@@ -616,28 +629,70 @@ class Splitwise {
       logger({ level: LOG_LEVELS.ERROR, message });
       throw new Error(message);
     }
-
+    // check if no redirect url supplied to isAuthorizationCode
+    if (isAuthorizationCode && !redirect_uri) {
+      const message = 'Redirect url required for OAuth2';
+      logger({ level: LOG_LEVELS.ERROR, message });
+      throw new Error(message);
+    }
+    
     const oauth2 = new OAuth2(
       consumerKey,
       consumerSecret,
-      'https://secure.splitwise.com/',
-      null,
-      'oauth/token',
+      SPLITWISE_ENDPOINTS.path,
+      isAuthorizationCode ? SPLITWISE_ENDPOINTS.authorizePath : null,
+      SPLITWISE_ENDPOINTS.accessTokenPath,
       null
     );
 
-    const accessTokenPromise = (() => {
+    this.getAuthorizationUrl = () => {
+      if (!isAuthorizationCode) return "";
+      return oauth2.getAuthorizeUrl({
+        redirect_uri,
+        scope: '',
+        state,
+        response_type: 'code'
+      });
+    }
+
+    const getAccessTokenFromAuthCode = () => {
+      return new Promise((resolve, reject) => {
+        if(!this.authCode) 
+          return reject(`No auth code generated yet. Visit ${this.getAuthorizationUrl()} and login. You need a callback url in your project as mentioned in callback url in your registered splitwise app. Then call \`getAccessToken()\` to register the access token.`);
+        if(this.accessToken) return resolve(this.accessToken);
+        return oauth2.getOAuthAccessToken(this.authCode, {
+          code: this.authCode,
+          redirect_uri,
+          grant_type: 'authorization_code'
+        }, (err, accessToken) => {
+          if (err) {
+            return reject(err);
+          }
+          // useAuthorizationHeaderforGET attaches auth in header. Else get requests throw 401 in case of authorization_code for missing access token.
+          oauth2.useAuthorizationHeaderforGET(true);
+          this.accessToken = accessToken;
+          return resolve(accessToken);
+        })
+      })
+    }
+
+
+    const getAccessTokenWithClientCredentials = () => {
       if (accessToken) {
         logger({ message: 'using provided access token' });
         return Promise.resolve(accessToken);
       }
       logger({ message: 'making request for access token' });
       return getAccessTokenPromise(logger, oauth2);
-    })();
+    };
+    if (!isAuthorizationCode) {
+      // earlier an IIFE. But now, this is called only in case of client_credentials. Called by default while initialising so as to acquire a token right away.
+      getAccessTokenWithClientCredentials();
+    }
 
     const generateEndpointMethod = getEndpointMethodGenerator(
       logger,
-      accessTokenPromise,
+      isAuthorizationCode ? getAccessTokenFromAuthCode : getAccessTokenWithClientCredentials,
       defaultIDs,
       oauth2
     );
@@ -647,8 +702,16 @@ class Splitwise {
     R.values(METHODS).forEach((method) => {
       this[method.methodName] = generateEndpointMethod(method);
     });
-
-    this.getAccessToken = () => accessTokenPromise;
+    
+    // Seperate methods for authorization code and client credentials
+    if (isAuthorizationCode) {
+      this.getAccessToken = code => {
+        this.authCode = code;
+        return getAccessTokenFromAuthCode();
+      }
+    }
+    else 
+      this.getAccessToken = getAccessTokenWithClientCredentials;
   }
 
   // Bonus utility method for easily making transactions from one person to one person
