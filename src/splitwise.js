@@ -168,6 +168,7 @@ const METHODS = {
       'date',
       'category_id',
       'users',
+      'currency_code',
     ],
   },
   DELETE_EXPENSE: {
