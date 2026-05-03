@@ -1,10 +1,10 @@
 {
   "_meta": {
     "fixture": "undelete-expense",
-    "endpoint": "/undelete_expense/4439512361",
+    "endpoint": "/undelete_expense/4439516432",
     "method": "POST",
     "statusCode": 200,
-    "generatedAt": "2026-05-03T04:27:46.568Z",
+    "generatedAt": "2026-05-03T04:31:59.104Z",
     "reviewRequired": true
   },
   "headers": {

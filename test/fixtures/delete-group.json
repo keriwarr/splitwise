@@ -1,10 +1,10 @@
 {
   "_meta": {
     "fixture": "delete-group",
-    "endpoint": "/delete_group/96944356",
+    "endpoint": "/delete_group/96944438",
     "method": "POST",
     "statusCode": 200,
-    "generatedAt": "2026-05-03T04:27:47.709Z",
+    "generatedAt": "2026-05-03T04:32:00.218Z",
     "reviewRequired": true
   },
   "headers": {

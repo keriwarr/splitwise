@@ -1,10 +1,10 @@
 {
   "_meta": {
     "fixture": "delete-expense-final",
-    "endpoint": "/delete_expense/4439512361",
+    "endpoint": "/delete_expense/4439516432",
     "method": "POST",
     "statusCode": 200,
-    "generatedAt": "2026-05-03T04:27:47.092Z",
+    "generatedAt": "2026-05-03T04:31:59.663Z",
     "reviewRequired": true
   },
   "headers": {

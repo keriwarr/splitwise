@@ -1,10 +1,10 @@
 {
   "_meta": {
-    "fixture": "create-friend",
-    "endpoint": "/create_friend",
-    "method": "POST",
+    "fixture": "get-friend-populated",
+    "endpoint": "/get_friend/120153281",
+    "method": "GET",
     "statusCode": 200,
-    "generatedAt": "2026-05-03T04:31:51.427Z",
+    "generatedAt": "2026-05-03T04:31:57.538Z",
     "reviewRequired": true
   },
   "headers": {
@@ -23,14 +23,28 @@
         "large": "https://s3.amazonaws.com/splitwise/uploads/user/default_avatars/avatar-placeholder-200px.png"
       },
       "custom_picture": false,
-      "balance": [],
+      "balance": [
+        {
+          "currency_code": "USD",
+          "amount": "10.0"
+        }
+      ],
       "groups": [
+        {
+          "group_id": 96944438,
+          "balance": [
+            {
+              "currency_code": "USD",
+              "amount": "10.0"
+            }
+          ]
+        },
         {
           "group_id": 0,
           "balance": []
         }
       ],
-      "updated_at": "2026-05-03T04:31:51Z"
+      "updated_at": "2026-05-03T04:31:53Z"
     }
   }
 }

@@ -1,10 +1,10 @@
 {
   "_meta": {
     "fixture": "get-expense-populated",
-    "endpoint": "/get_expense/4439512361",
+    "endpoint": "/get_expense/4439516432",
     "method": "GET",
     "statusCode": 200,
-    "generatedAt": "2026-05-03T04:27:44.177Z",
+    "generatedAt": "2026-05-03T04:31:56.140Z",
     "reviewRequired": true
   },
   "headers": {
@@ -12,8 +12,8 @@
   },
   "body": {
     "expense": {
-      "id": 4439512361,
-      "group_id": 96944356,
+      "id": 4439516432,
+      "group_id": 96944438,
       "expense_bundle_id": null,
       "description": "sdk-fixture-test expense",
       "repeats": false,
@@ -31,9 +31,15 @@
       "transaction_status": null,
       "cost": "20.0",
       "currency_code": "USD",
-      "repayments": [],
-      "date": "2026-05-03T04:27:41Z",
-      "created_at": "2026-05-03T04:27:41Z",
+      "repayments": [
+        {
+          "from": 120153281,
+          "to": 120152902,
+          "amount": "10.0"
+        }
+      ],
+      "date": "2026-05-03T04:31:52Z",
+      "created_at": "2026-05-03T04:31:53Z",
       "created_by": {
         "id": 120152902,
         "first_name": "Test",
@@ -43,7 +49,7 @@
         },
         "custom_picture": false
       },
-      "updated_at": "2026-05-03T04:27:42Z",
+      "updated_at": "2026-05-03T04:31:54Z",
       "updated_by": {
         "id": 120152902,
         "first_name": "Test",
@@ -75,18 +81,32 @@
           },
           "user_id": 120152902,
           "paid_share": "20.0",
-          "owed_share": "20.0",
-          "net_balance": "0.0"
+          "owed_share": "10.0",
+          "net_balance": "10.0"
+        },
+        {
+          "user": {
+            "id": 120153281,
+            "first_name": "Sdk",
+            "last_name": "Test",
+            "picture": {
+              "medium": "https://s3.amazonaws.com/splitwise/uploads/user/default_avatars/avatar-placeholder-100px.png"
+            }
+          },
+          "user_id": 120153281,
+          "paid_share": "0.0",
+          "owed_share": "10.0",
+          "net_balance": "-10.0"
         }
       ],
       "comments": [
         {
-          "id": 1033844325,
+          "id": 1033845598,
           "content": "sdk-fixture-test comment",
           "comment_type": "User",
           "relation_type": "ExpenseComment",
-          "relation_id": 4439512361,
-          "created_at": "2026-05-03T04:27:42Z",
+          "relation_id": 4439516432,
+          "created_at": "2026-05-03T04:31:54Z",
           "deleted_at": null,
           "user": {
             "id": 120152902,

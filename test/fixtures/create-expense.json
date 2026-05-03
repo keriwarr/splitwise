@@ -4,7 +4,7 @@
     "endpoint": "/create_expense",
     "method": "POST",
     "statusCode": 200,
-    "generatedAt": "2026-05-03T04:27:41.362Z",
+    "generatedAt": "2026-05-03T04:31:53.182Z",
     "reviewRequired": true
   },
   "headers": {
@@ -13,8 +13,8 @@
   "body": {
     "expenses": [
       {
-        "id": 4439512361,
-        "group_id": 96944356,
+        "id": 4439516432,
+        "group_id": 96944438,
         "expense_bundle_id": null,
         "description": "sdk-fixture-test expense",
         "repeats": false,
@@ -32,9 +32,15 @@
         "transaction_status": null,
         "cost": "20.0",
         "currency_code": "USD",
-        "repayments": [],
-        "date": "2026-05-03T04:27:41Z",
-        "created_at": "2026-05-03T04:27:41Z",
+        "repayments": [
+          {
+            "from": 120153281,
+            "to": 120152902,
+            "amount": "10.0"
+          }
+        ],
+        "date": "2026-05-03T04:31:52Z",
+        "created_at": "2026-05-03T04:31:53Z",
         "created_by": {
           "id": 120152902,
           "first_name": "Test",
@@ -44,7 +50,7 @@
           },
           "custom_picture": false
         },
-        "updated_at": "2026-05-03T04:27:41Z",
+        "updated_at": "2026-05-03T04:31:53Z",
         "updated_by": null,
         "deleted_at": null,
         "deleted_by": null,
@@ -68,8 +74,22 @@
             },
             "user_id": 120152902,
             "paid_share": "20.0",
-            "owed_share": "20.0",
-            "net_balance": "0.0"
+            "owed_share": "10.0",
+            "net_balance": "10.0"
+          },
+          {
+            "user": {
+              "id": 120153281,
+              "first_name": "Sdk",
+              "last_name": "Test",
+              "picture": {
+                "medium": "https://s3.amazonaws.com/splitwise/uploads/user/default_avatars/avatar-placeholder-100px.png"
+              }
+            },
+            "user_id": 120153281,
+            "paid_share": "0.0",
+            "owed_share": "10.0",
+            "net_balance": "-10.0"
           }
         ]
       }

@@ -4,7 +4,7 @@
     "endpoint": "/get_friends",
     "method": "GET",
     "statusCode": 200,
-    "generatedAt": "2026-05-03T04:27:45.104Z",
+    "generatedAt": "2026-05-03T04:31:57.071Z",
     "reviewRequired": true
   },
   "headers": {
@@ -32,6 +32,41 @@
           }
         ],
         "updated_at": "2026-05-03T04:27:39Z"
+      },
+      {
+        "id": 120153281,
+        "first_name": "Sdk",
+        "last_name": "Test",
+        "email": "sdk-fixture-test-friend-gl6k07@example.com",
+        "registration_status": "dummy",
+        "picture": {
+          "small": "https://s3.amazonaws.com/splitwise/uploads/user/default_avatars/avatar-placeholder-50px.png",
+          "medium": "https://s3.amazonaws.com/splitwise/uploads/user/default_avatars/avatar-placeholder-100px.png",
+          "large": "https://s3.amazonaws.com/splitwise/uploads/user/default_avatars/avatar-placeholder-200px.png"
+        },
+        "custom_picture": false,
+        "balance": [
+          {
+            "currency_code": "USD",
+            "amount": "10.0"
+          }
+        ],
+        "groups": [
+          {
+            "group_id": 96944438,
+            "balance": [
+              {
+                "currency_code": "USD",
+                "amount": "10.0"
+              }
+            ]
+          },
+          {
+            "group_id": 0,
+            "balance": []
+          }
+        ],
+        "updated_at": "2026-05-03T04:31:53Z"
       }
     ]
   }

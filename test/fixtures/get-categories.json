@@ -4,7 +4,7 @@
     "endpoint": "/get_categories",
     "method": "GET",
     "statusCode": 200,
-    "generatedAt": "2026-05-03T04:27:38.042Z",
+    "generatedAt": "2026-05-03T04:31:49.577Z",
     "reviewRequired": true
   },
   "headers": {

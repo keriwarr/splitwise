@@ -1,36 +1,31 @@
 {
   "_meta": {
-    "fixture": "create-friend",
-    "endpoint": "/create_friend",
+    "fixture": "add-user-to-group",
+    "endpoint": "/add_user_to_group",
     "method": "POST",
     "statusCode": 200,
-    "generatedAt": "2026-05-03T04:31:51.427Z",
+    "generatedAt": "2026-05-03T04:31:52.570Z",
     "reviewRequired": true
   },
   "headers": {
     "content-type": "application/json; charset=utf-8"
   },
   "body": {
-    "friend": {
+    "success": true,
+    "user": {
       "id": 120153281,
       "first_name": "Sdk",
       "last_name": "Test",
-      "email": "sdk-fixture-test-friend-gl6k07@example.com",
-      "registration_status": "dummy",
       "picture": {
         "small": "https://s3.amazonaws.com/splitwise/uploads/user/default_avatars/avatar-placeholder-50px.png",
         "medium": "https://s3.amazonaws.com/splitwise/uploads/user/default_avatars/avatar-placeholder-100px.png",
         "large": "https://s3.amazonaws.com/splitwise/uploads/user/default_avatars/avatar-placeholder-200px.png"
       },
       "custom_picture": false,
-      "balance": [],
-      "groups": [
-        {
-          "group_id": 0,
-          "balance": []
-        }
-      ],
-      "updated_at": "2026-05-03T04:31:51Z"
-    }
+      "email": "sdk-fixture-test-friend-gl6k07@example.com",
+      "registration_status": "dummy",
+      "balance": []
+    },
+    "errors": {}
   }
 }

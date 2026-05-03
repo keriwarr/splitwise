@@ -1,19 +1,117 @@
 {
   "_meta": {
     "fixture": "update-expense",
-    "endpoint": "/update_expense/4439512361",
+    "endpoint": "/update_expense/4439516432",
     "method": "POST",
-    "statusCode": 400,
-    "generatedAt": "2026-05-03T04:27:41.818Z",
+    "statusCode": 200,
+    "generatedAt": "2026-05-03T04:31:53.694Z",
     "reviewRequired": true
   },
   "headers": {
     "content-type": "application/json; charset=utf-8"
   },
   "body": {
+    "expenses": [
+      {
+        "id": 4439516432,
+        "group_id": 96944438,
+        "expense_bundle_id": null,
+        "description": "sdk-fixture-test expense (updated)",
+        "repeats": false,
+        "repeat_interval": null,
+        "email_reminder": false,
+        "email_reminder_in_advance": -1,
+        "next_repeat": null,
+        "details": null,
+        "comments_count": 0,
+        "payment": false,
+        "creation_method": null,
+        "transaction_method": "offline",
+        "transaction_confirmed": false,
+        "transaction_id": null,
+        "transaction_status": null,
+        "cost": "25.0",
+        "currency_code": "USD",
+        "repayments": [
+          {
+            "from": 120153281,
+            "to": 120152902,
+            "amount": "10.0"
+          }
+        ],
+        "date": "2026-05-03T04:31:52Z",
+        "created_at": "2026-05-03T04:31:53Z",
+        "created_by": {
+          "id": 120152902,
+          "first_name": "Test",
+          "last_name": null,
+          "picture": {
+            "medium": "https://s3.amazonaws.com/splitwise/uploads/user/default_avatars/avatar-orange35-100px.png"
+          },
+          "custom_picture": false
+        },
+        "updated_at": "2026-05-03T04:31:53Z",
+        "updated_by": {
+          "id": 120152902,
+          "first_name": "Test",
+          "last_name": null,
+          "picture": {
+            "medium": "https://s3.amazonaws.com/splitwise/uploads/user/default_avatars/avatar-orange35-100px.png"
+          },
+          "custom_picture": false
+        },
+        "deleted_at": null,
+        "deleted_by": null,
+        "category": {
+          "id": 18,
+          "name": "General"
+        },
+        "receipt": {
+          "large": null,
+          "original": null
+        },
+        "users": [
+          {
+            "user": {
+              "id": 120152902,
+              "first_name": "Test",
+              "last_name": null,
+              "picture": {
+                "medium": "https://s3.amazonaws.com/splitwise/uploads/user/default_avatars/avatar-orange35-100px.png"
+              }
+            },
+            "user_id": 120152902,
+            "paid_share": "20.0",
+            "owed_share": "10.0",
+            "net_balance": "10.0"
+          },
+          {
+            "user": {
+              "id": 120153281,
+              "first_name": "Sdk",
+              "last_name": "Test",
+              "picture": {
+                "medium": "https://s3.amazonaws.com/splitwise/uploads/user/default_avatars/avatar-placeholder-100px.png"
+              }
+            },
+            "user_id": 120153281,
+            "paid_share": "0.0",
+            "owed_share": "10.0",
+            "net_balance": "-10.0"
+          }
+        ],
+        "errors": {
+          "base": [
+            "The total of everyone's owed shares ($20.00) is different than the total cost ($25.00)",
+            "The total of everyone's paid shares ($20.00) is different than the total cost ($25.00)"
+          ]
+        }
+      }
+    ],
     "errors": {
       "base": [
-        "Unrecognized parameter `split_equally`"
+        "The total of everyone's owed shares ($20.00) is different than the total cost ($25.00)",
+        "The total of everyone's paid shares ($20.00) is different than the total cost ($25.00)"
       ]
     }
   }

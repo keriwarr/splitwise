@@ -83,18 +83,21 @@ describe('Groups', () => {
   });
 
   describe('addUser', () => {
-    it('POSTs to /add_user_to_group with body', async () => {
+    it('POSTs to /add_user_to_group and returns success + user', async () => {
       const { client, post } = makeMockHttp();
-      post.mockResolvedValue(true);
+      const apiResp = {
+        success: true,
+        user: { id: 2, firstName: 'Sdk', lastName: 'Test' },
+      };
+      post.mockResolvedValue(apiResp);
       const result = await new Groups(client).addUser({
         groupId: 1,
         userId: 2,
       });
       expect(post).toHaveBeenCalledWith('/add_user_to_group', {
         body: { groupId: 1, userId: 2 },
-        unwrapKey: 'success',
       });
-      expect(result).toEqual({ success: true });
+      expect(result).toBe(apiResp);
     });
   });
 

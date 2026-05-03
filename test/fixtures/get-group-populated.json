@@ -1,10 +1,10 @@
 {
   "_meta": {
     "fixture": "get-group-populated",
-    "endpoint": "/get_group/96944356",
+    "endpoint": "/get_group/96944438",
     "method": "GET",
     "statusCode": 200,
-    "generatedAt": "2026-05-03T04:27:43.257Z",
+    "generatedAt": "2026-05-03T04:31:55.214Z",
     "reviewRequired": true
   },
   "headers": {
@@ -12,10 +12,10 @@
   },
   "body": {
     "group": {
-      "id": 96944356,
-      "name": "sdk-fixture-test-group-6mkksa",
-      "created_at": "2026-05-03T04:27:40Z",
-      "updated_at": "2026-05-03T04:27:41Z",
+      "id": 96944438,
+      "name": "sdk-fixture-test-group-gl6k07",
+      "created_at": "2026-05-03T04:31:51Z",
+      "updated_at": "2026-05-03T04:31:53Z",
       "members": [
         {
           "id": 120152902,
@@ -29,12 +29,50 @@
           "custom_picture": false,
           "email": "test+sdk@example.com",
           "registration_status": "confirmed",
-          "balance": []
+          "balance": [
+            {
+              "currency_code": "USD",
+              "amount": "10.0"
+            }
+          ]
+        },
+        {
+          "id": 120153281,
+          "first_name": "Sdk",
+          "last_name": "Test",
+          "picture": {
+            "small": "https://s3.amazonaws.com/splitwise/uploads/user/default_avatars/avatar-placeholder-50px.png",
+            "medium": "https://s3.amazonaws.com/splitwise/uploads/user/default_avatars/avatar-placeholder-100px.png",
+            "large": "https://s3.amazonaws.com/splitwise/uploads/user/default_avatars/avatar-placeholder-200px.png"
+          },
+          "custom_picture": false,
+          "email": "sdk-fixture-test-friend-gl6k07@example.com",
+          "registration_status": "dummy",
+          "balance": [
+            {
+              "currency_code": "USD",
+              "amount": "-10.0"
+            }
+          ]
         }
       ],
       "simplify_by_default": true,
-      "original_debts": [],
-      "simplified_debts": [],
+      "original_debts": [
+        {
+          "from": 120153281,
+          "to": 120152902,
+          "amount": "10.0",
+          "currency_code": "USD"
+        }
+      ],
+      "simplified_debts": [
+        {
+          "from": 120153281,
+          "to": 120152902,
+          "amount": "10.0",
+          "currency_code": "USD"
+        }
+      ],
       "whiteboard": null,
       "whiteboard_lock_version": 0,
       "whiteboard_updated_at": null,
@@ -43,21 +81,21 @@
       "invite_link": "https://www.splitwise.com/l/SCRUBBED",
       "group_reminders": null,
       "avatar": {
-        "small": "https://s3.amazonaws.com/splitwise/uploads/group/default_avatars/avatar-teal42-other-50px.png",
-        "medium": "https://s3.amazonaws.com/splitwise/uploads/group/default_avatars/avatar-teal42-other-100px.png",
-        "large": "https://s3.amazonaws.com/splitwise/uploads/group/default_avatars/avatar-teal42-other-200px.png",
-        "xlarge": "https://s3.amazonaws.com/splitwise/uploads/group/default_avatars/avatar-teal42-other-500px.png",
-        "xxlarge": "https://s3.amazonaws.com/splitwise/uploads/group/default_avatars/avatar-teal42-other-1000px.png",
+        "small": "https://s3.amazonaws.com/splitwise/uploads/group/default_avatars/avatar-orange30-other-50px.png",
+        "medium": "https://s3.amazonaws.com/splitwise/uploads/group/default_avatars/avatar-orange30-other-100px.png",
+        "large": "https://s3.amazonaws.com/splitwise/uploads/group/default_avatars/avatar-orange30-other-200px.png",
+        "xlarge": "https://s3.amazonaws.com/splitwise/uploads/group/default_avatars/avatar-orange30-other-500px.png",
+        "xxlarge": "https://s3.amazonaws.com/splitwise/uploads/group/default_avatars/avatar-orange30-other-1000px.png",
         "original": null
       },
       "tall_avatar": {
-        "xlarge": "https://s3.amazonaws.com/splitwise/uploads/group/default_tall_avatars/avatar-teal42-other-288px.png",
-        "large": "https://s3.amazonaws.com/splitwise/uploads/group/default_tall_avatars/avatar-teal42-other-192px.png"
+        "xlarge": "https://s3.amazonaws.com/splitwise/uploads/group/default_tall_avatars/avatar-orange30-other-288px.png",
+        "large": "https://s3.amazonaws.com/splitwise/uploads/group/default_tall_avatars/avatar-orange30-other-192px.png"
       },
       "custom_avatar": false,
       "cover_photo": {
-        "xxlarge": "https://s3.amazonaws.com/splitwise/uploads/group/default_cover_photos/teal-other-1000px.png",
-        "xlarge": "https://s3.amazonaws.com/splitwise/uploads/group/default_cover_photos/teal-other-500px.png"
+        "xxlarge": "https://s3.amazonaws.com/splitwise/uploads/group/default_cover_photos/orange-other-1000px.png",
+        "xlarge": "https://s3.amazonaws.com/splitwise/uploads/group/default_cover_photos/orange-other-500px.png"
       }
     }
   }

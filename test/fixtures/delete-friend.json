@@ -1,10 +1,10 @@
 {
   "_meta": {
-    "fixture": "delete-expense",
-    "endpoint": "/delete_expense/4439516432",
+    "fixture": "delete-friend",
+    "endpoint": "/delete_friend/120153281",
     "method": "POST",
     "statusCode": 200,
-    "generatedAt": "2026-05-03T04:31:58.522Z",
+    "generatedAt": "2026-05-03T04:32:00.704Z",
     "reviewRequired": true
   },
   "headers": {
@@ -12,6 +12,6 @@
   },
   "body": {
     "success": true,
-    "errors": {}
+    "error": null
   }
 }

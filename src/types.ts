@@ -347,6 +347,12 @@ export interface Group {
   simplifiedDebts?: Debt[];
   /** Undocumented in OpenAPI but present on responses. */
   whiteboard?: string | null;
+  /** Undocumented; tracks optimistic-concurrency for whiteboard updates. */
+  whiteboardLockVersion?: number;
+  whiteboardUpdatedAt?: string | null;
+  whiteboardUpdatedBy?: number | null;
+  /** Undocumented; null when no group reminders are configured. */
+  groupReminders?: unknown | null;
   inviteLink?: string;
   avatar?: GroupAvatar;
   /** Undocumented variant returned alongside `avatar`. */

@@ -7,6 +7,7 @@ import type {
   GroupListParams,
   GroupRestoreParams,
   RemoveUserFromGroupParams,
+  User,
 } from '../types.js';
 import { BaseResource } from './base.js';
 
@@ -44,12 +45,17 @@ export class Groups extends BaseResource {
     return { success };
   }
 
-  async addUser(params: AddUserToGroupParams): Promise<{ success: boolean }> {
-    const success = await this.http.post<boolean>('/add_user_to_group', {
-      body: { ...params },
-      unwrapKey: 'success',
-    });
-    return { success };
+  /**
+   * Adds a user to a group. The API returns both `success` and the added
+   * `user` (handy when adding by email — you get back their assigned id).
+   */
+  async addUser(
+    params: AddUserToGroupParams,
+  ): Promise<{ success: boolean; user?: User }> {
+    return this.http.post<{ success: boolean; user?: User }>(
+      '/add_user_to_group',
+      { body: { ...params } },
+    );
   }
 
   async removeUser(
