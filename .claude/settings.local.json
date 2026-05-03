@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:dev.splitwise.com)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:devblogs.microsoft.com)",
+      "Bash(npx tsc:*)"
+    ]
+  }
+}
