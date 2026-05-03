@@ -192,13 +192,21 @@ export class Splitwise {
     return this.http.get('/test', overrides);
   }
 
-  /** Parse a natural-language expense description (e.g. "I owe Bob $10"). */
+  /**
+   * Parse a natural-language expense description (e.g. "I owe Bob $10").
+   *
+   * Unlike most endpoints, parse_sentence reports parse failures via the
+   * `valid` and `error` response fields rather than HTTP errors, so this
+   * method intentionally bypasses the SDK's "errors-in-body throw" check.
+   * Inspect `response.valid` and `response.error` after the call.
+   */
   async parseSentence(
     params: ParseSentenceParams,
     overrides?: RequestOverrides,
   ): Promise<ParseSentenceResponse> {
     return this.http.post<ParseSentenceResponse>('/parse_sentence', {
       body: { ...params },
+      bypassEmbeddedErrors: true,
       ...overrides,
     });
   }

@@ -123,6 +123,13 @@ export interface RequestOptions extends RequestOverrides {
    * value of `{ expenses: [...] }`. If undefined, returns the full response.
    */
   unwrapKey?: string;
+  /**
+   * If true, skip the SplitwiseConstraintError throw for 200 responses with
+   * `success:false` or non-empty `errors`. Used by endpoints (like
+   * /parse_sentence) where these fields are normal response data rather
+   * than failure signals.
+   */
+  bypassEmbeddedErrors?: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -511,7 +518,11 @@ export class HttpClient {
     }));
 
     try {
-      return await this.handleResponse<T>(response, options.unwrapKey);
+      return await this.handleResponse<T>(
+        response,
+        options.unwrapKey,
+        options.bypassEmbeddedErrors === true,
+      );
     } catch (error) {
       this.fireHook('onError', () => ({
         method,
@@ -548,6 +559,7 @@ export class HttpClient {
   private async handleResponse<T>(
     response: Response,
     unwrapKey: string | undefined,
+    bypassEmbeddedErrors: boolean,
   ): Promise<T> {
     const rawText = await response.text();
     let parsed: unknown = undefined;
@@ -581,7 +593,7 @@ export class HttpClient {
     // happen for a domain reason (e.g. deleting a friend with unsettled
     // debts). Surface these as a typed exception so callers can distinguish
     // "domain failure" from successful results without inspecting the body.
-    if (isPlainObject(parsed)) {
+    if (!bypassEmbeddedErrors && isPlainObject(parsed)) {
       const embedded = extractErrorsFromBody(parsed);
       const explicitFailure = parsed['success'] === false;
       if (embedded !== null || explicitFailure) {

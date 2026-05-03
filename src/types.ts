@@ -322,7 +322,8 @@ export interface CurrentUser extends User {
 export interface GroupMember {
   id: number;
   firstName: string;
-  lastName: string;
+  /** May be null on the API; some accounts only set a first name. */
+  lastName: string | null;
   email?: string;
   registrationStatus?: string;
   picture?: Picture;
@@ -503,7 +504,8 @@ export interface FriendGroup {
 export interface Friend {
   id: number;
   firstName: string;
-  lastName: string;
+  /** May be null on the API; some accounts only set a first name. */
+  lastName: string | null;
   email?: string;
   registrationStatus?: string;
   picture?: Picture;

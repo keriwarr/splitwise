@@ -352,6 +352,23 @@ describe('Splitwise client', () => {
       expect(url).toContain('/parse_sentence');
     });
 
+    it('parseSentence returns valid:false + error as data (not as exception)', async () => {
+      // Unlike most endpoints, parse_sentence reports failures via `valid`
+      // and `error` in the response body, not via SplitwiseConstraintError.
+      const fetchImpl = vi.fn(async () =>
+        jsonResponse({
+          expense: null,
+          valid: false,
+          confidence: 0,
+          error: "Couldn't understand the input",
+        }),
+      );
+      const sw = new Splitwise({ accessToken: 't', fetch: fetchImpl });
+      const result = await sw.parseSentence({ input: 'gibberish' });
+      expect(result.valid).toBe(false);
+      expect(result.error).toBe("Couldn't understand the input");
+    });
+
     it('getMainData calls /get_main_data with query params', async () => {
       const fetchImpl = vi.fn(async () => jsonResponse({}));
       const sw = new Splitwise({ accessToken: 't', fetch: fetchImpl });
