@@ -1,5 +1,7 @@
-// Public exports — populated as the SDK is built out.
-// The Splitwise client class is exported from './client.js' (added in Phase 6).
+// Public exports for the Splitwise SDK v2.
+
+export { Splitwise } from './client.js';
+export type { SplitwiseConfig } from './client.js';
 
 export {
   SplitwiseError,
@@ -12,3 +14,65 @@ export {
   SplitwiseServerError,
   SplitwiseConnectionError,
 } from './errors.js';
+
+export type {
+  AuthorizationUrlParams,
+  AuthorizationUrlResult,
+  ExchangeCodeParams,
+  OAuthToken,
+} from './auth/types.js';
+
+export type { PagedResult } from './pagination.js';
+
+export type {
+  // Config / logging
+  Logger,
+  LogLevel,
+  // Shared
+  Balance,
+  Debt,
+  Picture,
+  Repayment,
+  UserShare,
+  // Request params
+  ExpenseListParams,
+  ExpenseGetParams,
+  ExpenseCreateParams,
+  ExpenseUpdateParams,
+  ExpenseDeleteParams,
+  ExpenseRestoreParams,
+  CreateDebtParams,
+  GroupGetParams,
+  GroupCreateParams,
+  GroupDeleteParams,
+  GroupRestoreParams,
+  AddUserToGroupParams,
+  RemoveUserFromGroupParams,
+  UserGetParams,
+  UserUpdateParams,
+  FriendGetParams,
+  FriendCreateParams,
+  FriendCreateMultipleParams,
+  FriendDeleteParams,
+  CommentListParams,
+  CommentCreateParams,
+  CommentDeleteParams,
+  NotificationListParams,
+  ParseSentenceParams,
+  GetMainDataParams,
+  // Responses
+  User,
+  CurrentUser,
+  Group,
+  GroupMember,
+  Expense,
+  ExpenseShare,
+  ExpenseCategory,
+  Receipt,
+  Category,
+  Currency,
+  Comment,
+  Notification,
+  Friend,
+  FriendGroup,
+} from './types.js';
