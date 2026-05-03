@@ -433,11 +433,11 @@ async function runMutativePhase(
           method: 'POST',
           path: `/update_expense/${artifacts.expenseId}`,
           body: {
-            cost: '25.00',
+            // Only changing the description -- changing cost without
+            // recomputing user shares would fail the API's validation
+            // ("total owed shares != cost"). split_equally is not
+            // accepted by update_expense at all.
             description: `${TEST_LABEL} expense (updated)`,
-            group_id: artifacts.groupId,
-            currency_code: 'USD',
-            // Note: split_equally is NOT accepted by /update_expense.
           },
         },
         ctx,
