@@ -85,7 +85,7 @@ describe('Friends', () => {
   });
 
   describe('createMultiple', () => {
-    it('POSTs to /create_friends with body and uses "friends" unwrapKey', async () => {
+    it('POSTs to /create_friends with body wrapped in "users" and unwraps "users"', async () => {
       const { client, post } = makeMockHttp();
       const friends = [{ id: 1 }, { id: 2 }];
       post.mockResolvedValue(friends);
@@ -94,9 +94,9 @@ describe('Friends', () => {
       });
       expect(post).toHaveBeenCalledWith('/create_friends', {
         body: {
-          friends: [{ email: 'a@b.com', firstName: 'A', lastName: 'B' }],
+          users: [{ email: 'a@b.com', firstName: 'A', lastName: 'B' }],
         },
-        unwrapKey: 'friends',
+        unwrapKey: 'users',
       });
       expect(result).toBe(friends);
     });

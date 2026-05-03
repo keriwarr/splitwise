@@ -31,9 +31,11 @@ export class Friends extends BaseResource {
   }
 
   async createMultiple(params: FriendCreateMultipleParams): Promise<Friend[]> {
+    // Per OpenAPI the wire format is `users[]` (not `friends[]`) and the
+    // response is wrapped in `users`.
     return this.http.post<Friend[]>('/create_friends', {
-      body: { ...params },
-      unwrapKey: 'friends',
+      body: { users: params.friends },
+      unwrapKey: 'users',
     });
   }
 

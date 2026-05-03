@@ -61,7 +61,9 @@ export interface Debt {
 
 export interface ExpenseListParams {
   groupId?: number;
-  friendshipId?: number;
+  // The query parameter is `friend_id` per OpenAPI; v1 SDK incorrectly used
+  // `friendship_id` so filter-by-friend has been broken since v1.
+  friendId?: number;
   datedAfter?: string;
   datedBefore?: string;
   updatedAfter?: string;
@@ -79,7 +81,9 @@ export interface ExpenseCreateParams {
   cost: string;
   description: string;
   groupId?: number;
-  friendshipId?: number;
+  /** Not documented in OpenAPI for create_expense; v1 supported it for
+   *  non-group debts. Smoke-test before relying on it. */
+  friendId?: number;
   details?: string;
   date?: string;
   repeatInterval?: string;
@@ -88,7 +92,7 @@ export interface ExpenseCreateParams {
   users?: UserShare[];
   splitEqually?: boolean;
   payment?: boolean;
-  /** Tag for how the expense was created (e.g. "equal"). */
+  /** Tag for how the expense was created (e.g. "equal"). Undocumented. */
   creationMethod?: string;
 }
 
@@ -97,7 +101,7 @@ export interface ExpenseUpdateParams {
   cost?: string;
   description?: string;
   groupId?: number;
-  friendshipId?: number;
+  friendId?: number;
   details?: string;
   date?: string;
   repeatInterval?: string;
@@ -135,9 +139,20 @@ export interface GroupGetParams {
   id: number;
 }
 
+export type GroupType =
+  | 'home'
+  | 'trip'
+  | 'couple'
+  | 'other'
+  | 'apartment'
+  | 'house';
+
 export interface GroupCreateParams {
   name: string;
-  groupType?: string;
+  groupType?: GroupType | string;
+  /** Whether the group should simplify debts. */
+  simplifyByDefault?: boolean;
+  /** Undocumented in OpenAPI but supported by v1. */
   countryCode?: string;
   users?: Array<{
     userId?: number;
@@ -243,6 +258,15 @@ export interface ParseSentenceParams {
   autosave?: boolean;
 }
 
+/** Response from /parse_sentence (undocumented endpoint; shape confirmed
+ *  empirically by other-language SDKs). */
+export interface ParseSentenceResponse {
+  expense?: Expense;
+  valid?: boolean;
+  confidence?: number;
+  error?: string;
+}
+
 export interface GetMainDataParams {
   noExpenses?: boolean;
   limit?: number;
@@ -273,16 +297,9 @@ export interface CurrentUser extends User {
   defaultGroupId?: number;
   notificationsRead?: string;
   notificationsCount?: number;
-  notifications?: {
-    addedAsFriend?: boolean;
-    addedToGroup?: boolean;
-    expenseAdded?: boolean;
-    expenseUpdated?: boolean;
-    bills?: boolean;
-    payments?: boolean;
-    monthlyNewsletter?: boolean;
-    announcedExpenses?: boolean;
-  };
+  /** Per OpenAPI this is an open-ended bag of boolean flags; new keys may
+   *  appear without notice. */
+  notifications?: Record<string, boolean>;
 }
 
 // -- Groups ------------------------------------------------------------------
@@ -298,6 +315,20 @@ export interface GroupMember {
   balance: Balance[];
 }
 
+export interface GroupAvatar {
+  original?: string | null;
+  xxlarge?: string | null;
+  xlarge?: string | null;
+  large?: string | null;
+  medium?: string | null;
+  small?: string | null;
+}
+
+export interface GroupCoverPhoto {
+  xxlarge?: string | null;
+  xlarge?: string | null;
+}
+
 export interface Group {
   id: number;
   name: string;
@@ -307,11 +338,12 @@ export interface Group {
   members?: GroupMember[];
   originalDebts?: Debt[];
   simplifiedDebts?: Debt[];
+  /** Undocumented in OpenAPI but present on responses. */
   whiteboard?: string | null;
   inviteLink?: string;
-  avatar?: Picture;
+  avatar?: GroupAvatar;
   customAvatar?: boolean;
-  coverPhoto?: Picture;
+  coverPhoto?: GroupCoverPhoto;
 }
 
 // -- Expenses ----------------------------------------------------------------
@@ -337,6 +369,7 @@ export interface ExpenseShare {
 export interface Expense {
   id: number;
   groupId: number | null;
+  /** Spec field name is `friendship_id` (singular friendship, not `friend_id`). */
   friendshipId?: number | null;
   expenseBundleId?: number | null;
   description: string;
@@ -348,13 +381,19 @@ export interface Expense {
   details?: string | null;
   commentsCount?: number;
   payment: boolean;
+  /** Undocumented in OpenAPI but present in responses. */
+  creationMethod?: string | null;
+  /** Undocumented in OpenAPI but present in responses (e.g. for payments). */
+  transactionMethod?: string | null;
   transactionConfirmed?: boolean;
+  transactionId?: string | null;
+  transactionStatus?: string | null;
   cost: string;
   currencyCode: string;
   repayments?: Repayment[];
   date: string;
   createdAt: string;
-  createdBy: User;
+  createdBy?: User | null;
   updatedAt?: string;
   updatedBy?: User | null;
   deletedAt?: string | null;
@@ -362,13 +401,16 @@ export interface Expense {
   category?: ExpenseCategory;
   receipt?: Receipt;
   users?: ExpenseShare[];
+  comments?: Comment[];
 }
 
 // -- Categories --------------------------------------------------------------
 
 export interface CategoryIconTypes {
-  square?: Picture;
-  slim?: Picture;
+  /** Per OpenAPI the API returns `large` and `xlarge` here, not the standard
+   *  small/medium/large picture sizes. */
+  square?: { large?: string; xlarge?: string };
+  slim?: { small?: string; large?: string };
 }
 
 export interface Category {
@@ -401,14 +443,21 @@ export interface Comment {
 
 // -- Notifications -----------------------------------------------------------
 
+export interface NotificationSource {
+  /** e.g. "Expense", "Group", "Friendship". */
+  type: string;
+  id: number;
+  url?: string | null;
+}
+
 export interface Notification {
   id: number;
   type?: number;
   createdAt: string;
   createdBy?: number;
-  source?: User | null;
+  source?: NotificationSource | null;
   imageUrl?: string;
-  imageShape?: string;
+  imageShape?: 'square' | 'circle' | string;
   content?: string;
 }
 

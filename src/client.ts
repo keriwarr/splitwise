@@ -49,6 +49,7 @@ import type {
   Logger,
   LogLevel,
   ParseSentenceParams,
+  ParseSentenceResponse,
 } from './types.js';
 
 const DEFAULT_BASE_URL = 'https://secure.splitwise.com/api/v3.0';
@@ -143,8 +144,12 @@ export class Splitwise {
   }
 
   /** Parse a natural-language expense description (e.g. "I owe Bob $10"). */
-  async parseSentence(params: ParseSentenceParams): Promise<unknown> {
-    return this.http.post<unknown>('/parse_sentence', { body: { ...params } });
+  async parseSentence(
+    params: ParseSentenceParams,
+  ): Promise<ParseSentenceResponse> {
+    return this.http.post<ParseSentenceResponse>('/parse_sentence', {
+      body: { ...params },
+    });
   }
 
   /** Bulk fetch of user, groups, friends, currencies, categories, etc. */
