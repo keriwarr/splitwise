@@ -120,6 +120,29 @@ describe('keysToSnakeCase', () => {
     expect(keysToSnakeCase({})).toEqual({});
     expect(keysToSnakeCase([])).toEqual([]);
   });
+
+  test('passes Blob through untouched (would otherwise be replaced with {})', () => {
+    const blob = new Blob(['x']);
+    const result = keysToSnakeCase({ receipt: blob });
+    expect(result).toEqual({ receipt: blob });
+  });
+
+  test('passes URL through untouched', () => {
+    const url = new URL('https://example.com/x');
+    const result = keysToSnakeCase({ next: url });
+    expect(result).toEqual({ next: url });
+  });
+
+  test('passes Map and Set through untouched', () => {
+    const map = new Map([['a', 1]]);
+    const set = new Set([1, 2]);
+    const result = keysToSnakeCase({ aThing: map, bThing: set }) as {
+      a_thing: Map<string, number>;
+      b_thing: Set<number>;
+    };
+    expect(result.a_thing).toBe(map);
+    expect(result.b_thing).toBe(set);
+  });
 });
 
 // ---------------------------------------------------------------------------

@@ -2,6 +2,8 @@
 
 A TypeScript SDK for the [Splitwise API](https://dev.splitwise.com). Zero runtime dependencies, full TypeScript types, supports both Client Credentials and Authorization Code (PKCE) OAuth flows.
 
+> **Heads up:** v2 was largely written by [Claude](https://claude.com/claude-code) under the direction of the maintainer ([@keriwarr](https://github.com/keriwarr)). The result has been reviewed by humans and validated against the live API, but you should treat the SDK with the same scrutiny you'd apply to any new dependency. Bug reports welcome.
+
 ## Install
 
 ```shell
@@ -307,6 +309,8 @@ The SDK automatically retries transient failures (network errors, 429s, and 5xx 
 | `logger` | `Logger` | — | Custom logger; the SDK never calls `console.*` directly. Implements `{ debug, info, warn, error }`. |
 | `logLevel` | `'none' \| 'error' \| 'warn' \| 'info' \| 'debug'` | `'none'` | Filter logs at or below this level. |
 | `fetch` | `typeof fetch` | global `fetch` | Inject a custom `fetch` implementation (useful for testing). |
+| `hooks` | `Hooks` | — | Lifecycle callbacks (`onRequest`, `onResponse`, `onError`) for observability. Hooks are called per HTTP attempt; the `Authorization` header is redacted in event payloads. |
+| `appInfo` | `AppInfo` | — | Identifies the calling app in the `User-Agent` header (`{ name, version?, url? }`). Helpful for support and your own telemetry. |
 
 You must provide either `accessToken` or both `consumerKey` and `consumerSecret`.
 

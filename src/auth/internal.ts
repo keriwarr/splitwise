@@ -11,6 +11,8 @@
 import {
   SplitwiseAuthenticationError,
   SplitwiseConnectionError,
+  SplitwiseRateLimitError,
+  SplitwiseServerError,
   createApiError,
 } from '../errors.js';
 import { withRetry } from '../retry.js';
@@ -91,14 +93,14 @@ export async function postTokenRequest(
     ({ error }) => {
       // Don't burn through retries if the caller has given up.
       if (callerSignal?.aborted === true) return false;
-      // Network failures and 5xx are retryable; 4xx (bad credentials) are not.
-      // We can't easily import SplitwiseServerError from here without making the
-      // dep cycle awkward, so we check the class name.
-      if (error instanceof SplitwiseConnectionError) return true;
-      if (error instanceof Error && error.name === 'SplitwiseServerError') {
-        return true;
-      }
-      return false;
+      // Network failures, 5xx, and rate-limit responses are transient.
+      // 4xx (bad credentials) are not -- they indicate the request itself
+      // is wrong and retrying won't help.
+      return (
+        error instanceof SplitwiseConnectionError ||
+        error instanceof SplitwiseRateLimitError ||
+        error instanceof SplitwiseServerError
+      );
     },
   );
 }

@@ -52,6 +52,21 @@ export function createPagedResult<T>(
   const userLimit = options?.limit;
   const startOffset = options?.offset ?? DEFAULT_OFFSET;
   const extraQuery = options?.query ?? {};
+
+  // Reject nonsensical limits early. Without this guard, `limit: 0` would
+  // produce an infinite loop in pageIterator (page.length < 0 is never true,
+  // so the termination check never fires and we just keep requesting empty
+  // pages from offset 0 forever).
+  if (userLimit !== undefined && (!Number.isInteger(userLimit) || userLimit <= 0)) {
+    throw new RangeError(
+      `Pagination limit must be a positive integer, got ${userLimit}`,
+    );
+  }
+  if (!Number.isInteger(startOffset) || startOffset < 0) {
+    throw new RangeError(
+      `Pagination offset must be a non-negative integer, got ${startOffset}`,
+    );
+  }
   const overrides: RequestOverrides = {
     ...(options?.signal !== undefined && { signal: options.signal }),
     ...(options?.timeout !== undefined && { timeout: options.timeout }),

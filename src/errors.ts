@@ -150,10 +150,13 @@ export function parseRetryAfter(
 
   // Fall back to HTTP-date. Date.parse() is too permissive (e.g. it accepts
   // bare strings like "-5" as years), so we require the input to look like a
-  // proper HTTP-date: weekday name + comma + day + month name + ...
-  // This matches all three RFC 7231 date formats (IMF-fixdate, obsolete
-  // RFC 850, and ANSI C asctime).
-  if (!/^[A-Za-z]+(?:,|\s+\d)/.test(trimmed)) return undefined;
+  // proper HTTP-date. RFC 7231 allows three formats:
+  //   IMF-fixdate    : "Sun, 06 Nov 1994 08:49:37 GMT"  (weekday + comma)
+  //   obsolete RFC 850: "Sunday, 06-Nov-94 08:49:37 GMT" (weekday + comma)
+  //   ANSI C asctime : "Sun Nov  6 08:49:37 1994"       (weekday + space + month name)
+  // All three start with a weekday name; the next non-space char is either
+  // a comma or another letter (the month name in asctime).
+  if (!/^[A-Za-z]+(?:,|\s+[A-Za-z])/.test(trimmed)) return undefined;
   const epochMs = Date.parse(trimmed);
   if (Number.isNaN(epochMs)) return undefined;
   const deltaSeconds = Math.max(0, Math.ceil((epochMs - now()) / 1000));

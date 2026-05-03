@@ -41,14 +41,15 @@ export class Expenses extends BaseResource {
     params: ExpenseCreateParams,
     overrides?: RequestOverrides,
   ): Promise<Expense> {
-    const expenses = await this.http.post<Expense[]>('/create_expense', {
-      body: { ...params },
-      unwrapKey: 'expenses',
-      ...overrides,
-    });
-    const first = expenses[0];
-    if (!first) throw new SplitwiseError('Splitwise returned no expense');
-    return first;
+    const expenses = await this.http.post<Expense[] | undefined>(
+      '/create_expense',
+      {
+        body: { ...params },
+        unwrapKey: 'expenses',
+        ...overrides,
+      },
+    );
+    return firstExpenseOrThrow(expenses);
   }
 
   async update(
@@ -56,14 +57,15 @@ export class Expenses extends BaseResource {
     overrides?: RequestOverrides,
   ): Promise<Expense> {
     const { id, ...body } = params;
-    const expenses = await this.http.post<Expense[]>(`/update_expense/${id}`, {
-      body: { ...body },
-      unwrapKey: 'expenses',
-      ...overrides,
-    });
-    const first = expenses[0];
-    if (!first) throw new SplitwiseError('Splitwise returned no expense');
-    return first;
+    const expenses = await this.http.post<Expense[] | undefined>(
+      `/update_expense/${id}`,
+      {
+        body: { ...body },
+        unwrapKey: 'expenses',
+        ...overrides,
+      },
+    );
+    return firstExpenseOrThrow(expenses);
   }
 
   /**
@@ -101,7 +103,11 @@ export class Expenses extends BaseResource {
       {
         payment: false,
         cost,
-        description: description ?? '',
+        // ExpenseCreateParams requires `description`, but for createDebt
+        // it's optional from the user's perspective. Default to a generic
+        // string rather than '' because some Splitwise-side validation
+        // rejects empty descriptions.
+        description: description ?? 'IOU',
         ...(groupId !== undefined && { groupId }),
         ...(date !== undefined && { date }),
         // v1 only set paidShare/owedShare on the relevant side. We mirror that
@@ -115,4 +121,19 @@ export class Expenses extends BaseResource {
       overrides,
     );
   }
+}
+
+/**
+ * Pulls the first expense from a create/update response, or throws a
+ * descriptive SplitwiseError if the array is missing or empty. We do this
+ * defensively because the http client returns `undefined` (cast as the
+ * generic `T`) when the unwrap key is absent from the response.
+ */
+function firstExpenseOrThrow(expenses: Expense[] | undefined): Expense {
+  if (!Array.isArray(expenses) || expenses.length === 0) {
+    throw new SplitwiseError(
+      'Splitwise returned no expense (response was missing or empty `expenses` array)',
+    );
+  }
+  return expenses[0] as Expense;
 }

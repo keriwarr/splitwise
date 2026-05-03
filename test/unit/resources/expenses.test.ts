@@ -87,6 +87,20 @@ describe('Expenses', () => {
       ).rejects.toBeInstanceOf(SplitwiseError);
     });
 
+    it('throws SplitwiseError (not raw TypeError) if response missing expenses key', async () => {
+      const { client, post } = makeMockHttp();
+      // The HTTP client returns `undefined` (cast as the generic T) when the
+      // unwrap key isn't present. Used to crash with TypeError on [0].
+      post.mockResolvedValue(undefined);
+      const expenses = new Expenses(client);
+      await expect(
+        expenses.create({ cost: '10.00', description: 'Lunch' }),
+      ).rejects.toBeInstanceOf(SplitwiseError);
+      await expect(
+        expenses.create({ cost: '10.00', description: 'Lunch' }),
+      ).rejects.toThrow(/missing or empty/);
+    });
+
     it('passes a receipt Blob through to the http client', async () => {
       const { client, post } = makeMockHttp();
       post.mockResolvedValue([{ id: 1 }]);
@@ -207,7 +221,7 @@ describe('Expenses', () => {
         body: {
           payment: false,
           cost: '5.00',
-          description: '',
+          description: 'IOU',
           users: [
             { userId: 1, paidShare: '5.00' },
             { userId: 2, owedShare: '5.00' },

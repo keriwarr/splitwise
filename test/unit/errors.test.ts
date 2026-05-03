@@ -340,6 +340,27 @@ describe('parseRetryAfter', () => {
     expect(parseRetryAfter(targetDate, () => fakeNow)).toBe(60);
   });
 
+  it('accepts ANSI C asctime format (RFC 7231 obsolete-date)', () => {
+    // The canonical asctime example from the spec. Used to be silently
+    // rejected by our pre-filter regex because the char after the weekday
+    // is a letter (month name), not a digit. asctime has no timezone field
+    // so Date.parse interprets it as local time -- we don't pin the exact
+    // delta here, just that the value parses (not undefined).
+    expect(
+      parseRetryAfter('Sun Nov  6 08:49:37 1994', () => 0),
+    ).toBeTypeOf('number');
+  });
+
+  it('parses obsolete RFC 850 format', () => {
+    // "Sunday, 06-Nov-94 08:49:37 GMT"
+    const fakeNow = Date.UTC(1994, 10, 6, 8, 49, 7);
+    const result = parseRetryAfter(
+      'Sunday, 06-Nov-94 08:49:37 GMT',
+      () => fakeNow,
+    );
+    expect(result).toBe(30);
+  });
+
   it('returns 0 for HTTP-dates in the past', () => {
     const fakeNow = Date.UTC(2026, 4, 3, 12, 0, 0);
     const targetDate = new Date(fakeNow - 60_000).toUTCString();

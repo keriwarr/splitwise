@@ -309,6 +309,37 @@ describe('Splitwise client', () => {
       expect(stored?.expiresAt).toBeGreaterThan(Date.now());
     });
 
+    it('fromAuthorizationCode-sourced client throws when token expires (no silent fall-through)', async () => {
+      const fetchImpl = vi.fn(async (url: string) => {
+        if (url.includes('/oauth/token')) {
+          return jsonResponse({
+            access_token: 'tok-soon-expired',
+            token_type: 'bearer',
+            // Negative -> already past the 60s eager-refresh window the SDK uses.
+            expires_in: -120,
+          });
+        }
+        return jsonResponse({ user: { id: 1, first_name: 'X', last_name: null } });
+      });
+      const sw = await Splitwise.fromAuthorizationCode(
+        {
+          clientId: 'cid',
+          clientSecret: 'cs',
+          code: 'authcode',
+          codeVerifier: 'verifier',
+          redirectUri: 'http://localhost:3000/callback',
+        },
+        { fetch: fetchImpl as unknown as typeof fetch },
+      );
+      // The cached token is already expired; we used to silently fall back
+      // to config.accessToken (the same expired token). Now we throw a
+      // clear authentication error.
+      await expect(sw.getAccessToken()).rejects.toThrow(/expired/i);
+      await expect(sw.users.getCurrent()).rejects.toThrow(
+        SplitwiseAuthenticationError,
+      );
+    });
+
     it('propagates auth errors from token fetch', async () => {
       const fetchImpl = vi.fn(async () =>
         jsonResponse({ error: 'invalid_client' }, 401),

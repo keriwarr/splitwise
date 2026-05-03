@@ -270,4 +270,32 @@ describe('createPagedResult', () => {
       unwrapKey: 'expenses',
     });
   });
+
+  it('rejects limit:0 at construction (would otherwise infinite-loop)', () => {
+    const { client } = makeMockHttp([]);
+    expect(() =>
+      createPagedResult(client, '/expenses', 'expenses', { limit: 0 }),
+    ).toThrow(RangeError);
+  });
+
+  it('rejects negative limit', () => {
+    const { client } = makeMockHttp([]);
+    expect(() =>
+      createPagedResult(client, '/expenses', 'expenses', { limit: -5 }),
+    ).toThrow(RangeError);
+  });
+
+  it('rejects non-integer limit', () => {
+    const { client } = makeMockHttp([]);
+    expect(() =>
+      createPagedResult(client, '/expenses', 'expenses', { limit: 1.5 }),
+    ).toThrow(RangeError);
+  });
+
+  it('rejects negative offset', () => {
+    const { client } = makeMockHttp([]);
+    expect(() =>
+      createPagedResult(client, '/expenses', 'expenses', { offset: -1 }),
+    ).toThrow(RangeError);
+  });
 });

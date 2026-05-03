@@ -35,6 +35,7 @@ import type {
   ExchangeCodeParams,
   OAuthToken,
 } from './auth/types.js';
+import { SplitwiseAuthenticationError } from './errors.js';
 import {
   HttpClient,
   type Hooks,
@@ -59,6 +60,14 @@ import type {
 } from './types.js';
 
 const DEFAULT_BASE_URL = 'https://secure.splitwise.com/api/v3.0';
+
+/**
+ * Internal sigil used by `fromAuthorizationCode` to mark a client whose
+ * cached token came from a one-shot OAuth exchange (and therefore can't be
+ * automatically refreshed). Prevents the user-facing `accessToken` config
+ * option from triggering this special path.
+ */
+const FROM_AUTHORIZATION_CODE = Symbol('FROM_AUTHORIZATION_CODE');
 
 /** Configuration accepted by the Splitwise constructor. */
 export interface SplitwiseConfig {
@@ -142,12 +151,39 @@ export class Splitwise {
    * single network call instead of stampeding the OAuth endpoint.
    */
   private inFlightTokenFetch: Promise<OAuthToken> | null = null;
+  /**
+   * Tracks where the active token came from. Determines what happens when
+   * `cachedToken` expires:
+   *   - 'static'              : the user passed `accessToken` directly; we
+   *                             have no way to refresh, just keep using it.
+   *   - 'client_credentials'  : we fetched it from the OAuth endpoint and
+   *                             can fetch another one.
+   *   - 'authorization_code'  : it came from fromAuthorizationCode(); there
+   *                             is no automatic refresh path (Splitwise
+   *                             doesn't issue refresh_tokens), so an
+   *                             expired token is a hard error.
+   */
+  private readonly tokenSource: 'static' | 'client_credentials' | 'authorization_code';
 
   constructor(config: SplitwiseConfig) {
     validateConfig(config);
 
     this.config = config;
     this.fetchImpl = config.fetch;
+
+    // Determine where we'll source tokens from. The internal sigil is
+    // checked separately because fromAuthorizationCode() also passes a
+    // user-facing accessToken to satisfy validateConfig().
+    const fromAuthCode = (config as { [FROM_AUTHORIZATION_CODE]?: true })[
+      FROM_AUTHORIZATION_CODE
+    ];
+    if (fromAuthCode === true) {
+      this.tokenSource = 'authorization_code';
+    } else if (config.accessToken !== undefined) {
+      this.tokenSource = 'static';
+    } else {
+      this.tokenSource = 'client_credentials';
+    }
 
     this.http = new HttpClient({
       baseUrl: config.baseUrl ?? DEFAULT_BASE_URL,
@@ -267,15 +303,40 @@ export class Splitwise {
    * Concurrent calls share a single in-flight fetch (no thundering herd).
    */
   async getAccessToken(): Promise<string> {
-    // A cached OAuthToken (set by fromAuthorizationCode or by a prior
-    // Client Credentials fetch) takes priority over a static
-    // config.accessToken because it may carry expiry/refresh metadata.
-    if (this.cachedToken !== null && !isTokenExpired(this.cachedToken)) {
+    // Static accessToken: hand it back. We have no refresh path, no cached
+    // token to compare expiry against -- whatever the user gave us is what
+    // we use, even if it's expired (the API will tell them).
+    if (this.tokenSource === 'static') {
+      return this.config.accessToken as string;
+    }
+
+    // Authorization Code: the token came from a one-shot exchange. Use it
+    // until expiry; after expiry there's nothing we can do automatically
+    // (Splitwise doesn't issue refresh_tokens), so throw a clear error
+    // explaining the situation.
+    if (this.tokenSource === 'authorization_code') {
+      if (this.cachedToken === null) {
+        // Defensive: shouldn't happen since fromAuthorizationCode sets it.
+        throw new SplitwiseAuthenticationError(
+          'No cached token available for an authorization-code client',
+          'no_token',
+          null,
+        );
+      }
+      if (isTokenExpired(this.cachedToken)) {
+        throw new SplitwiseAuthenticationError(
+          'Authorization-code token has expired and cannot be refreshed automatically. ' +
+            'Re-run the Authorization Code flow to obtain a new token.',
+          'token_expired',
+          { expiresAt: this.cachedToken.expiresAt ?? null },
+        );
+      }
       return this.cachedToken.accessToken;
     }
 
-    if (this.config.accessToken !== undefined) {
-      return this.config.accessToken;
+    // Client Credentials: cached if fresh, refetch if stale or absent.
+    if (this.cachedToken !== null && !isTokenExpired(this.cachedToken)) {
+      return this.cachedToken.accessToken;
     }
 
     // If another caller already kicked off a token fetch, wait on theirs
@@ -353,7 +414,10 @@ export class Splitwise {
       // the cached OAuthToken below preserves expiry/refresh metadata that
       // a bare `accessToken` config option can't.
       accessToken: token.accessToken,
-    });
+      // Internal sigil so getAccessToken() knows this client's token came
+      // from a one-shot OAuth exchange and can't be auto-refreshed.
+      [FROM_AUTHORIZATION_CODE]: true,
+    } as SplitwiseConfig);
     sw.cachedToken = token;
     return sw;
   }

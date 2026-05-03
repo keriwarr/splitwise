@@ -34,18 +34,24 @@ export function toCamelCase(str: string): string {
 // Recursive key conversion
 // ---------------------------------------------------------------------------
 
+/**
+ * True only for plain Object or Object.create(null) instances. Built-in
+ * classes (Date, Blob, URL, Map, Set, etc.) intentionally return false so
+ * the recursive helpers don't try to walk into them and replace them with
+ * `{}` (Object.entries returns [] for most built-ins, which would silently
+ * destroy the value).
+ */
 function isPlainObject(value: unknown): value is Record<string, unknown> {
-  return (
-    typeof value === 'object' &&
-    value !== null &&
-    !Array.isArray(value) &&
-    !(value instanceof Date)
-  );
+  if (typeof value !== 'object' || value === null) return false;
+  const proto: unknown = Object.getPrototypeOf(value);
+  return proto === null || proto === Object.prototype;
 }
 
 /**
  * Recursively converts all object keys from camelCase to snake_case.
- * Primitives, null, undefined, Dates, and arrays of primitives pass through.
+ * Plain objects and arrays are walked; everything else (primitives,
+ * Date, Blob, URL, Map, Set, custom classes, etc.) passes through
+ * untouched so the caller / JSON.stringify can handle them.
  */
 export function keysToSnakeCase(obj: unknown): unknown {
   if (Array.isArray(obj)) {
@@ -65,7 +71,7 @@ export function keysToSnakeCase(obj: unknown): unknown {
 
 /**
  * Recursively converts all object keys from snake_case to camelCase.
- * Primitives, null, undefined, Dates, and arrays of primitives pass through.
+ * Plain objects and arrays are walked; everything else passes through.
  */
 export function keysToCamelCase(obj: unknown): unknown {
   if (Array.isArray(obj)) {
