@@ -130,8 +130,10 @@ export interface ExpenseRestoreParams {
 }
 
 export interface CreateDebtParams {
-  from: number;
-  to: number;
+  /** User id of the person who paid (i.e. is owed money). */
+  paidBy: number;
+  /** User id of the person who owes money. */
+  owedBy: number;
   amount: string | number;
   description?: string;
   groupId?: number;

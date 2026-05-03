@@ -171,8 +171,8 @@ describe('Expenses', () => {
       post.mockResolvedValue([expense]);
       const expenses = new Expenses(client);
       await expenses.createDebt({
-        from: 1,
-        to: 2,
+        paidBy: 1,
+        owedBy: 2,
         amount: '50.00',
         description: 'IOU',
         groupId: 99,
@@ -199,8 +199,8 @@ describe('Expenses', () => {
       post.mockResolvedValue([{ id: 1 }]);
       const expenses = new Expenses(client);
       await expenses.createDebt({
-        from: 1,
-        to: 2,
+        paidBy: 1,
+        owedBy: 2,
         amount: '5.00',
       });
       expect(post).toHaveBeenCalledWith('/create_expense', {
@@ -222,8 +222,8 @@ describe('Expenses', () => {
       post.mockResolvedValue([{ id: 1 }]);
       const expenses = new Expenses(client);
       await expenses.createDebt({
-        from: 1,
-        to: 2,
+        paidBy: 1,
+        owedBy: 2,
         amount: 12.5,
         description: 'Snack',
       });

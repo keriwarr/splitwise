@@ -86,11 +86,16 @@ export class Expenses extends BaseResource {
     await this.http.post(`/undelete_expense/${params.id}`, overrides);
   }
 
+  /**
+   * Convenience helper for "person A owes person B X amount" — wraps create()
+   * with the right `users` shape so callers don't have to remember the
+   * paid_share / owed_share dance.
+   */
   async createDebt(
     params: CreateDebtParams,
     overrides?: RequestOverrides,
   ): Promise<Expense> {
-    const { from, to, amount, description, groupId, date } = params;
+    const { paidBy, owedBy, amount, description, groupId, date } = params;
     const cost = typeof amount === 'number' ? String(amount) : amount;
     return this.create(
       {
@@ -103,8 +108,8 @@ export class Expenses extends BaseResource {
         // to minimize the request payload and avoid surprising server-side
         // validation.
         users: [
-          { userId: from, paidShare: cost },
-          { userId: to, owedShare: cost },
+          { userId: paidBy, paidShare: cost },
+          { userId: owedBy, owedShare: cost },
         ],
       },
       overrides,

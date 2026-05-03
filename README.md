@@ -130,10 +130,10 @@ const expense = await sw.expenses.create({
   splitEqually: true,
 });
 
-// Convenience: record that user 23 owes user 42 ten dollars
+// Convenience: record that user 42 owes user 23 ten dollars (user 23 paid for it)
 await sw.expenses.createDebt({
-  from: 23,
-  to: 42,
+  paidBy: 23,
+  owedBy: 42,
   amount: 10,
   description: 'Coffee',
   groupId: 12345,
