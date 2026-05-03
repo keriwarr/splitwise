@@ -5,12 +5,12 @@
  * and client_secret for an access token that acts on behalf of the app owner.
  */
 
-import { postTokenRequest } from './internal.js';
+import { postTokenRequest, type PostTokenRequestOptions } from './internal.js';
 import type { ClientCredentialsParams, OAuthToken } from './types.js';
 
 export async function fetchClientCredentialsToken(
   params: ClientCredentialsParams,
-  options: { fetch?: typeof fetch; tokenUrl?: string } = {},
+  options: PostTokenRequestOptions = {},
 ): Promise<OAuthToken> {
   return postTokenRequest(
     {

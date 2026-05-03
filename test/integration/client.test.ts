@@ -233,6 +233,69 @@ describe('Splitwise client', () => {
       expect(fetchImpl).toHaveBeenCalledTimes(4);
     });
 
+    it('dedupes concurrent token fetches (no thundering herd)', async () => {
+      // Manually-resolvable token fetch lets us start three callers, then
+      // confirm they're all waiting on the same in-flight Promise before
+      // resolving once. Without dedup, we'd see 3 token fetches; with dedup, 1.
+      let tokenFetchCount = 0;
+      let resolveTokenFetch: ((res: Response) => void) | undefined;
+      const fetchImpl = vi.fn(async (url: string) => {
+        if (url.includes('/oauth/token')) {
+          tokenFetchCount += 1;
+          return new Promise<Response>((resolve) => {
+            resolveTokenFetch = resolve;
+          });
+        }
+        return jsonResponse({ currencies: [] });
+      });
+      const sw = new Splitwise({
+        consumerKey: 'k',
+        consumerSecret: 's',
+        fetch: fetchImpl as unknown as typeof fetch,
+      });
+      // Kick off three concurrent calls -- they should all park on the same
+      // in-flight token fetch instead of starting their own.
+      const all = Promise.all([
+        sw.currencies.list(),
+        sw.currencies.list(),
+        sw.currencies.list(),
+      ]);
+      // Give the event loop a tick so all three callers reach getAccessToken().
+      await new Promise<void>((r) => queueMicrotask(r));
+      expect(tokenFetchCount).toBe(1);
+      // Now resolve the token fetch and let the API calls complete.
+      resolveTokenFetch!(
+        jsonResponse({ access_token: 'fetched-token', token_type: 'bearer' }),
+      );
+      await all;
+      expect(tokenFetchCount).toBe(1);
+    });
+
+    it('fromAuthorizationCode preserves token expiry/refresh metadata', async () => {
+      const fetchImpl = vi.fn(async () =>
+        jsonResponse({
+          access_token: 'tok123',
+          token_type: 'bearer',
+          expires_in: 3600,
+          refresh_token: 'refresh-xyz',
+        }),
+      );
+      const sw = await Splitwise.fromAuthorizationCode(
+        {
+          clientId: 'cid',
+          clientSecret: 'cs',
+          code: 'authcode',
+          codeVerifier: 'verifier',
+          redirectUri: 'http://localhost:3000/callback',
+        },
+        { fetch: fetchImpl as unknown as typeof fetch },
+      );
+      const stored = sw.getOAuthToken();
+      expect(stored?.accessToken).toBe('tok123');
+      expect(stored?.refreshToken).toBe('refresh-xyz');
+      expect(stored?.expiresAt).toBeGreaterThan(Date.now());
+    });
+
     it('propagates auth errors from token fetch', async () => {
       const fetchImpl = vi.fn(async () =>
         jsonResponse({ error: 'invalid_client' }, 401),

@@ -13,7 +13,11 @@ import {
   SplitwiseConnectionError,
   createApiError,
 } from '../errors.js';
+import { withRetry } from '../retry.js';
 import type { OAuthToken } from './types.js';
+
+const DEFAULT_TIMEOUT_MS = 30_000;
+const DEFAULT_MAX_RETRIES = 2;
 
 export const DEFAULT_TOKEN_URL = 'https://secure.splitwise.com/oauth/token';
 export const DEFAULT_AUTHORIZE_URL =
@@ -52,18 +56,59 @@ function extractOAuthErrorCode(body: unknown): string {
   return 'oauth_error';
 }
 
+export interface PostTokenRequestOptions {
+  fetch?: typeof fetch;
+  tokenUrl?: string;
+  /** Per-request timeout in ms. Default 30000. */
+  timeout?: number;
+  /** Max retries for transient failures (network errors, 5xx). Default 2. */
+  maxRetries?: number;
+  /** Optional caller-supplied AbortSignal. */
+  signal?: AbortSignal;
+}
+
 /**
  * POSTs `params` form-encoded to the token endpoint and returns the parsed token.
  *
  * 401/400 responses are mapped to SplitwiseAuthenticationError because the OAuth
  * spec uses 400 for things like `invalid_grant` even though the SDK normally
  * reserves 400 for validation errors.
+ *
+ * Honors timeout, AbortSignal, and exponential-backoff retry on transient
+ * failures (matching the main HttpClient's behavior). 4xx responses are not
+ * retried since they indicate the credentials themselves are bad.
  */
 export async function postTokenRequest(
   params: Record<string, string>,
-  options: { fetch?: typeof fetch; tokenUrl?: string } = {},
+  options: PostTokenRequestOptions = {},
+): Promise<OAuthToken> {
+  const maxRetries = options.maxRetries ?? DEFAULT_MAX_RETRIES;
+  const callerSignal = options.signal;
+
+  return withRetry(
+    () => postTokenRequestOnce(params, options),
+    { maxRetries },
+    ({ error }) => {
+      // Don't burn through retries if the caller has given up.
+      if (callerSignal?.aborted === true) return false;
+      // Network failures and 5xx are retryable; 4xx (bad credentials) are not.
+      // We can't easily import SplitwiseServerError from here without making the
+      // dep cycle awkward, so we check the class name.
+      if (error instanceof SplitwiseConnectionError) return true;
+      if (error instanceof Error && error.name === 'SplitwiseServerError') {
+        return true;
+      }
+      return false;
+    },
+  );
+}
+
+async function postTokenRequestOnce(
+  params: Record<string, string>,
+  options: PostTokenRequestOptions,
 ): Promise<OAuthToken> {
   const tokenUrl = options.tokenUrl ?? DEFAULT_TOKEN_URL;
+  const timeout = options.timeout ?? DEFAULT_TIMEOUT_MS;
   const fetchImpl =
     options.fetch ??
     (globalThis as { fetch: typeof fetch }).fetch.bind(globalThis);
@@ -71,6 +116,28 @@ export async function postTokenRequest(
   const body = new URLSearchParams();
   for (const [key, value] of Object.entries(params)) {
     body.append(key, value);
+  }
+
+  // Compose the timeout-driven controller with any caller-supplied signal,
+  // matching HttpClient.requestOnce.
+  const controller = new AbortController();
+  const timeoutHandle = setTimeout(() => {
+    controller.abort();
+  }, timeout);
+  const callerSignal = options.signal;
+  let abortListenerCleanup: (() => void) | undefined;
+  if (callerSignal !== undefined) {
+    if (callerSignal.aborted) {
+      controller.abort();
+    } else {
+      const onAbort = (): void => {
+        controller.abort();
+      };
+      callerSignal.addEventListener('abort', onAbort);
+      abortListenerCleanup = (): void => {
+        callerSignal.removeEventListener('abort', onAbort);
+      };
+    }
   }
 
   let response: Response;
@@ -82,13 +149,29 @@ export async function postTokenRequest(
         Accept: 'application/json',
       },
       body: body.toString(),
+      signal: controller.signal,
     });
   } catch (error) {
     const err = error as Error;
+    if (err.name === 'AbortError') {
+      if (callerSignal?.aborted === true) {
+        throw new SplitwiseConnectionError(
+          'OAuth token request aborted by caller',
+          err,
+        );
+      }
+      throw new SplitwiseConnectionError(
+        `OAuth token request timed out after ${timeout}ms`,
+        err,
+      );
+    }
     throw new SplitwiseConnectionError(
       err.message || 'Network request failed',
       err,
     );
+  } finally {
+    clearTimeout(timeoutHandle);
+    abortListenerCleanup?.();
   }
 
   const rawText = await response.text();

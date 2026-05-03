@@ -11,7 +11,11 @@
  * until step 2, which protects against authorization code interception.
  */
 
-import { DEFAULT_AUTHORIZE_URL, postTokenRequest } from './internal.js';
+import {
+  DEFAULT_AUTHORIZE_URL,
+  postTokenRequest,
+  type PostTokenRequestOptions,
+} from './internal.js';
 import type {
   AuthorizationUrlParams,
   AuthorizationUrlResult,
@@ -70,7 +74,7 @@ export async function createAuthorizationUrl(
 
 export async function exchangeAuthorizationCode(
   params: ExchangeCodeParams,
-  options: { fetch?: typeof fetch; tokenUrl?: string } = {},
+  options: PostTokenRequestOptions = {},
 ): Promise<OAuthToken> {
   return postTokenRequest(
     {

@@ -137,6 +137,11 @@ export class Splitwise {
   private readonly config: SplitwiseConfig;
   private readonly fetchImpl: typeof fetch | undefined;
   private cachedToken: OAuthToken | null = null;
+  /**
+   * Holds an in-flight token fetch so concurrent first-call requests share a
+   * single network call instead of stampeding the OAuth endpoint.
+   */
+  private inFlightTokenFetch: Promise<OAuthToken> | null = null;
 
   constructor(config: SplitwiseConfig) {
     validateConfig(config);
@@ -250,28 +255,51 @@ export class Splitwise {
    * Returns a valid access token, fetching one via Client Credentials if
    * necessary. Useful for callers who want to obtain a token once and persist
    * it across process restarts (then pass it back as `accessToken`).
+   *
+   * Concurrent calls share a single in-flight fetch (no thundering herd).
    */
   async getAccessToken(): Promise<string> {
-    if (this.config.accessToken !== undefined) {
-      return this.config.accessToken;
-    }
-
+    // A cached OAuthToken (set by fromAuthorizationCode or by a prior
+    // Client Credentials fetch) takes priority over a static
+    // config.accessToken because it may carry expiry/refresh metadata.
     if (this.cachedToken !== null && !isTokenExpired(this.cachedToken)) {
       return this.cachedToken.accessToken;
     }
 
+    if (this.config.accessToken !== undefined) {
+      return this.config.accessToken;
+    }
+
+    // If another caller already kicked off a token fetch, wait on theirs
+    // instead of starting a second one.
+    if (this.inFlightTokenFetch !== null) {
+      const token = await this.inFlightTokenFetch;
+      return token.accessToken;
+    }
+
     // We've already verified consumerKey and consumerSecret in validateConfig
     // when accessToken is absent.
-    const token = await fetchClientCredentialsToken(
+    const fetchOptions = {
+      ...(this.fetchImpl !== undefined && { fetch: this.fetchImpl }),
+      ...(this.config.timeout !== undefined && { timeout: this.config.timeout }),
+      ...(this.config.maxRetries !== undefined && {
+        maxRetries: this.config.maxRetries,
+      }),
+    };
+    this.inFlightTokenFetch = fetchClientCredentialsToken(
       {
         clientId: this.config.consumerKey as string,
         clientSecret: this.config.consumerSecret as string,
       },
-      this.fetchImpl !== undefined ? { fetch: this.fetchImpl } : undefined,
+      fetchOptions,
     );
-
-    this.cachedToken = token;
-    return token.accessToken;
+    try {
+      const token = await this.inFlightTokenFetch;
+      this.cachedToken = token;
+      return token.accessToken;
+    } finally {
+      this.inFlightTokenFetch = null;
+    }
   }
 
   // ---------------------------------------------------------------------------
@@ -292,6 +320,10 @@ export class Splitwise {
   /**
    * Exchange an authorization code for an access token, then return a fully
    * configured Splitwise client using that token.
+   *
+   * The full OAuthToken (including `expiresAt` and `refreshToken` if Splitwise
+   * provides them) is stored on the client; you can read it back via
+   * `sw.getOAuthToken()` to persist for later use.
    */
   static async fromAuthorizationCode(
     params: ExchangeCodeParams,
@@ -301,14 +333,39 @@ export class Splitwise {
     >,
   ): Promise<Splitwise> {
     const fetchImpl = config?.fetch;
-    const token = await exchangeAuthorizationCode(
-      params,
-      fetchImpl !== undefined ? { fetch: fetchImpl } : undefined,
-    );
-    return new Splitwise({
+    const tokenOptions = {
+      ...(fetchImpl !== undefined && { fetch: fetchImpl }),
+      ...(config?.timeout !== undefined && { timeout: config.timeout }),
+      ...(config?.maxRetries !== undefined && { maxRetries: config.maxRetries }),
+    };
+    const token = await exchangeAuthorizationCode(params, tokenOptions);
+    const sw = new Splitwise({
       ...config,
+      // Pass the access token so validateConfig accepts the construction;
+      // the cached OAuthToken below preserves expiry/refresh metadata that
+      // a bare `accessToken` config option can't.
       accessToken: token.accessToken,
     });
+    sw.cachedToken = token;
+    return sw;
+  }
+
+  /**
+   * Returns the cached OAuthToken if one was obtained via Client Credentials
+   * or `fromAuthorizationCode`, or undefined if the client was constructed
+   * with a bare `accessToken` (no expiry metadata to share).
+   *
+   * Useful for persisting the token across process restarts:
+   *
+   * ```ts
+   * const token = sw.getOAuthToken();
+   * if (token !== undefined) {
+   *   await persist(token);  // store accessToken + expiresAt + refreshToken
+   * }
+   * ```
+   */
+  getOAuthToken(): OAuthToken | undefined {
+    return this.cachedToken ?? undefined;
   }
 }
 
