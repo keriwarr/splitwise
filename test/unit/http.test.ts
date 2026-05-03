@@ -161,6 +161,38 @@ describe('HttpClient', () => {
         JSON.stringify({ first_name: 'Ada', user_id: 1 }),
       );
     });
+
+    it('uses multipart/form-data when body contains a Blob', async () => {
+      const { client, fetchMock } = makeClient(async () =>
+        jsonResponse(200, { expenses: [{ id: 1 }] }),
+      );
+
+      const fakeImage = new Blob(['fake image bytes'], { type: 'image/jpeg' });
+      await client.post('/create_expense', {
+        body: {
+          cost: '10.00',
+          description: 'Lunch',
+          receipt: fakeImage,
+          users: [{ userId: 1, paidShare: '10.00', owedShare: '10.00' }],
+        },
+      });
+
+      const [, init] = fetchMock.mock.calls[0]!;
+      const headers = (init as RequestInit).headers as Record<string, string>;
+      // Content-Type must NOT be set manually — fetch handles it for FormData,
+      // adding the multipart boundary.
+      expect(headers['Content-Type']).toBeUndefined();
+
+      const body = (init as RequestInit).body;
+      expect(body).toBeInstanceOf(FormData);
+      const form = body as FormData;
+      expect(form.get('cost')).toBe('10.00');
+      expect(form.get('description')).toBe('Lunch');
+      expect(form.get('users__0__user_id')).toBe('1');
+      expect(form.get('users__0__paid_share')).toBe('10.00');
+      expect(form.get('receipt')).toBeInstanceOf(Blob);
+      expect((form.get('receipt') as Blob).type).toBe('image/jpeg');
+    });
   });
 
   describe('error responses', () => {

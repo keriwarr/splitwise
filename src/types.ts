@@ -94,6 +94,13 @@ export interface ExpenseCreateParams {
   payment?: boolean;
   /** Tag for how the expense was created (e.g. "equal"). Undocumented. */
   creationMethod?: string;
+  /**
+   * Optional receipt image. When provided, the request is sent as
+   * multipart/form-data instead of form-urlencoded. Pass a `Blob` (works in
+   * Node 18+, browsers, and other modern runtimes); in browsers a `File`
+   * (which extends Blob) also works.
+   */
+  receipt?: Blob;
 }
 
 export interface ExpenseUpdateParams {

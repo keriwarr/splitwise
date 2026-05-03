@@ -86,6 +86,22 @@ describe('Expenses', () => {
         expenses.create({ cost: '10.00', description: 'Lunch' }),
       ).rejects.toBeInstanceOf(SplitwiseError);
     });
+
+    it('passes a receipt Blob through to the http client', async () => {
+      const { client, post } = makeMockHttp();
+      post.mockResolvedValue([{ id: 1 }]);
+      const expenses = new Expenses(client);
+      const receipt = new Blob(['fake-bytes'], { type: 'image/jpeg' });
+      await expenses.create({
+        cost: '10.00',
+        description: 'Lunch',
+        receipt,
+      });
+      const [, options] = post.mock.calls[0]!;
+      expect((options as { body: { receipt: Blob } }).body.receipt).toBe(
+        receipt,
+      );
+    });
   });
 
   describe('update', () => {

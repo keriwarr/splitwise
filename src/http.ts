@@ -125,6 +125,45 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
 }
 
 /**
+ * Walks an object/array tree to detect any Blob value (e.g. a file upload).
+ * Used by the request layer to decide between form-urlencoded and multipart.
+ */
+function containsBlob(value: unknown): boolean {
+  if (value instanceof Blob) return true;
+  if (Array.isArray(value)) return value.some(containsBlob);
+  if (isPlainObject(value)) return Object.values(value).some(containsBlob);
+  return false;
+}
+
+/**
+ * Builds a multipart/form-data FormData from a request body. Non-Blob values
+ * are flattened with the same `users__0__user_id` convention used for
+ * form-urlencoded; Blob values are appended as-is so they're sent as files.
+ */
+function buildMultipartBody(body: Record<string, unknown>): FormData {
+  const form = new FormData();
+  for (const [key, value] of Object.entries(body)) {
+    if (value === undefined || value === null) continue;
+    if (value instanceof Blob) {
+      // The Splitwise API expects snake_case field names.
+      form.append(snakeCaseKey(key), value);
+    } else {
+      // Flatten this single-key subtree using the existing helper, which
+      // applies snake_case conversion and double-underscore nesting.
+      const flat = flattenParams({ [key]: value });
+      for (const [fk, fv] of Object.entries(flat)) {
+        form.append(fk, String(fv));
+      }
+    }
+  }
+  return form;
+}
+
+function snakeCaseKey(key: string): string {
+  return key.replace(/[A-Z]/g, (c) => `_${c.toLowerCase()}`);
+}
+
+/**
  * Splitwise occasionally returns 200 with an `errors` field. This helper
  * extracts a human-readable message and detects whether there are errors at all.
  */
@@ -245,10 +284,15 @@ export class HttpClient {
       Accept: 'application/json',
     };
 
-    let body: string | undefined;
+    let body: string | FormData | undefined;
     if (options.body !== undefined && method !== 'GET') {
       const useForm = options.formEncoded !== false;
-      if (useForm) {
+      if (useForm && containsBlob(options.body)) {
+        // The body has a file (e.g. an expense receipt). Send as multipart so
+        // fetch can include the binary payload. Don't set Content-Type — fetch
+        // attaches it automatically with the boundary.
+        body = buildMultipartBody(options.body);
+      } else if (useForm) {
         const flat = flattenParams(options.body);
         const params = new URLSearchParams();
         for (const [key, value] of Object.entries(flat)) {
