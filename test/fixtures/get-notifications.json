@@ -4,7 +4,7 @@
     "endpoint": "/get_notifications",
     "method": "GET",
     "statusCode": 200,
-    "generatedAt": "2026-05-03T04:17:18.154Z",
+    "generatedAt": "2026-05-03T04:27:38.928Z",
     "reviewRequired": true
   },
   "headers": {

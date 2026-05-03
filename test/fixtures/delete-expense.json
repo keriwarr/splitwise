@@ -1,0 +1,17 @@
+{
+  "_meta": {
+    "fixture": "delete-expense",
+    "endpoint": "/delete_expense/4439512361",
+    "method": "POST",
+    "statusCode": 200,
+    "generatedAt": "2026-05-03T04:27:46.059Z",
+    "reviewRequired": true
+  },
+  "headers": {
+    "content-type": "application/json; charset=utf-8"
+  },
+  "body": {
+    "success": true,
+    "errors": {}
+  }
+}

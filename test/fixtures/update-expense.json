@@ -1,0 +1,20 @@
+{
+  "_meta": {
+    "fixture": "update-expense",
+    "endpoint": "/update_expense/4439512361",
+    "method": "POST",
+    "statusCode": 400,
+    "generatedAt": "2026-05-03T04:27:41.818Z",
+    "reviewRequired": true
+  },
+  "headers": {
+    "content-type": "application/json; charset=utf-8"
+  },
+  "body": {
+    "errors": {
+      "base": [
+        "Unrecognized parameter `split_equally`"
+      ]
+    }
+  }
+}

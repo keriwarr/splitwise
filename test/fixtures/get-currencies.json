@@ -4,7 +4,7 @@
     "endpoint": "/get_currencies",
     "method": "GET",
     "statusCode": 200,
-    "generatedAt": "2026-05-03T04:17:16.821Z",
+    "generatedAt": "2026-05-03T04:27:37.612Z",
     "reviewRequired": true
   },
   "headers": {

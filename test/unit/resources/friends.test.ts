@@ -45,10 +45,10 @@ describe('Friends', () => {
   });
 
   describe('create', () => {
-    it('POSTs to /create_friend, unwraps "friends", and returns the first', async () => {
+    it('POSTs to /create_friend and unwraps the singular "friend" key', async () => {
       const { client, post } = makeMockHttp();
       const friend = { id: 9 };
-      post.mockResolvedValue([friend]);
+      post.mockResolvedValue(friend);
       const result = await new Friends(client).create({
         userEmail: 'a@b.com',
         userFirstName: 'Alice',
@@ -60,27 +60,19 @@ describe('Friends', () => {
           userFirstName: 'Alice',
           userLastName: 'B',
         },
-        unwrapKey: 'friends',
+        unwrapKey: 'friend',
       });
       expect(result).toBe(friend);
     });
 
     it('accepts userEmail alone (first/last name optional)', async () => {
       const { client, post } = makeMockHttp();
-      post.mockResolvedValue([{ id: 1 }]);
+      post.mockResolvedValue({ id: 1 });
       await new Friends(client).create({ userEmail: 'a@b.com' });
       expect(post).toHaveBeenCalledWith('/create_friend', {
         body: { userEmail: 'a@b.com' },
-        unwrapKey: 'friends',
+        unwrapKey: 'friend',
       });
-    });
-
-    it('throws if Splitwise returns no friend', async () => {
-      const { client, post } = makeMockHttp();
-      post.mockResolvedValue([]);
-      await expect(
-        new Friends(client).create({ userEmail: 'a@b.com' }),
-      ).rejects.toThrow(/no friend/);
     });
   });
 

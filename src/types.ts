@@ -108,7 +108,8 @@ export interface ExpenseUpdateParams {
   currencyCode?: string;
   categoryId?: number;
   users?: UserShare[];
-  splitEqually?: boolean;
+  // Note: split_equally is NOT supported by /update_expense; the API
+  // returns "Unrecognized parameter `split_equally`" 400.
   payment?: boolean;
   expenseBundleId?: number;
 }

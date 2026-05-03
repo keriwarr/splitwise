@@ -366,10 +366,8 @@ async function runMutativePhase(
       },
     },
     ctx,
-  )) as { friends?: { id: number }[]; user?: { id: number } } | undefined;
-  // Try both possible response shapes (spec disagreement, see audit notes)
-  artifacts.friendId =
-    createFriendResp?.friends?.[0]?.id ?? createFriendResp?.user?.id;
+  )) as { friend?: { id: number } } | undefined;
+  artifacts.friendId = createFriendResp?.friend?.id;
   await delay(REQUEST_DELAY_MS);
 
   // Create a group
@@ -439,7 +437,7 @@ async function runMutativePhase(
             description: `${TEST_LABEL} expense (updated)`,
             group_id: artifacts.groupId,
             currency_code: 'USD',
-            split_equally: true,
+            // Note: split_equally is NOT accepted by /update_expense.
           },
         },
         ctx,

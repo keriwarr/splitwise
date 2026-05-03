@@ -4,7 +4,7 @@
     "endpoint": "/get_current_user",
     "method": "GET",
     "statusCode": 200,
-    "generatedAt": "2026-05-03T04:17:15.045Z",
+    "generatedAt": "2026-05-03T04:27:35.836Z",
     "reviewRequired": true
   },
   "headers": {

@@ -4,7 +4,7 @@
     "endpoint": "/get_groups",
     "method": "GET",
     "statusCode": 200,
-    "generatedAt": "2026-05-03T04:17:15.497Z",
+    "generatedAt": "2026-05-03T04:27:36.297Z",
     "reviewRequired": true
   },
   "headers": {
@@ -16,7 +16,7 @@
         "id": 0,
         "name": "Non-group expenses",
         "created_at": "2026-05-03T04:12:31Z",
-        "updated_at": "2026-05-03T04:17:15Z",
+        "updated_at": "2026-05-03T04:27:36Z",
         "members": [
           {
             "id": 120152902,
