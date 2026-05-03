@@ -350,6 +350,31 @@ describe('HttpClient', () => {
         errors: {},
       });
     });
+
+    it('does NOT false-positive on 200 with a top-level "message" field', async () => {
+      // Splitwise's actual error envelopes use `errors` or `error` (singular).
+      // A response body that happens to include a top-level `message` is not
+      // an error -- treating it as one would cause false positives on
+      // legitimate response shapes.
+      const { client } = makeClient(async () =>
+        jsonResponse(200, { message: "Have a nice day", thing: { id: 1 } }),
+      );
+
+      await expect(client.get('/get_thing')).resolves.toEqual({
+        message: 'Have a nice day',
+        thing: { id: 1 },
+      });
+    });
+
+    it('still uses top-level "message" as a fallback for non-2xx errors', async () => {
+      const { client } = makeClient(async () =>
+        jsonResponse(500, { message: 'Server is melting' }),
+      );
+
+      const err = await client.get('/get_anything').catch((e: unknown) => e);
+      expect(err).toBeInstanceOf(SplitwiseServerError);
+      expect((err as Error).message).toContain('Server is melting');
+    });
   });
 
   describe('retries', () => {

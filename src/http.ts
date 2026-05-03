@@ -269,11 +269,29 @@ function headersToObject(headers: Headers): Record<string, string> {
 }
 
 /**
- * Splitwise occasionally returns 200 with an `errors` field. This helper
- * extracts a human-readable message and detects whether there are errors at all.
+ * Extracts an error message from a Splitwise response body. Used in two
+ * contexts:
+ *   - 4xx/5xx responses where the body is known to be an error envelope
+ *     (`includeFallbacks: true` -- looser, falls back to a top-level
+ *     `message` field if nothing else matches)
+ *   - 2xx responses where we're sniffing for embedded errors on endpoints
+ *     that return 200-with-success:false (`includeFallbacks: false` --
+ *     stricter, only triggers on Splitwise's actual error envelope shapes)
+ *
+ * Splitwise's known error shapes (from the OpenAPI spec):
+ *   { errors: { base: ["msg", ...] } }       (most common)
+ *   { errors: { fieldname: ["msg", ...] } }  (per-field validation)
+ *   { errors: ["msg", ...] }                 (rare; flat array)
+ *   { error: "msg" }                         (singular, used by /create_friend)
+ *
+ * The 2xx path deliberately does NOT match a top-level `message` field
+ * because Splitwise doesn't use it as an error indicator -- treating any
+ * 200 body containing `message` as an error would false-positive on
+ * legitimate response shapes that happen to include that key.
  */
 function extractErrorsFromBody(
   body: unknown,
+  options: { includeFallbacks?: boolean } = {},
 ): { message: string; code: string } | null {
   if (!isPlainObject(body)) return null;
   const errors = body['errors'];
@@ -305,7 +323,9 @@ function extractErrorsFromBody(
     return { message: body['error'] as string, code: 'error' };
   }
 
-  if (typeof body['message'] === 'string') {
+  // Top-level `message` is only consulted on the non-2xx path. On 2xx it
+  // would false-positive on any response that happens to include the key.
+  if (options.includeFallbacks === true && typeof body['message'] === 'string') {
     return { message: body['message'] as string, code: 'error' };
   }
 
@@ -573,7 +593,7 @@ export class HttpClient {
     }
 
     if (!response.ok) {
-      const fromBody = extractErrorsFromBody(parsed);
+      const fromBody = extractErrorsFromBody(parsed, { includeFallbacks: true });
       const message =
         fromBody?.message ??
         `HTTP ${response.status} ${response.statusText || ''}`.trim();
@@ -594,6 +614,8 @@ export class HttpClient {
     // debts). Surface these as a typed exception so callers can distinguish
     // "domain failure" from successful results without inspecting the body.
     if (!bypassEmbeddedErrors && isPlainObject(parsed)) {
+      // Only the strict error shapes here -- a legitimate 200 with a
+      // top-level `message` field is not an error.
       const embedded = extractErrorsFromBody(parsed);
       const explicitFailure = parsed['success'] === false;
       if (embedded !== null || explicitFailure) {
