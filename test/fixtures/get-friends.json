@@ -1,0 +1,16 @@
+{
+  "_meta": {
+    "fixture": "get-friends",
+    "endpoint": "/get_friends",
+    "method": "GET",
+    "statusCode": 200,
+    "generatedAt": "2026-05-03T04:38:09.695Z",
+    "reviewRequired": true
+  },
+  "headers": {
+    "content-type": "application/json; charset=utf-8"
+  },
+  "body": {
+    "friends": []
+  }
+}

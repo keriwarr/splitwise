@@ -1,0 +1,47 @@
+{
+  "_meta": {
+    "fixture": "get-current-user",
+    "endpoint": "/get_current_user",
+    "method": "GET",
+    "statusCode": 200,
+    "generatedAt": "2026-05-03T04:38:06.969Z",
+    "reviewRequired": true
+  },
+  "headers": {
+    "content-type": "application/json; charset=utf-8"
+  },
+  "body": {
+    "user": {
+      "id": 120152902,
+      "first_name": "Test",
+      "last_name": null,
+      "picture": {
+        "small": "https://s3.amazonaws.com/splitwise/uploads/user/default_avatars/avatar-orange35-50px.png",
+        "medium": "https://s3.amazonaws.com/splitwise/uploads/user/default_avatars/avatar-orange35-100px.png",
+        "large": "https://s3.amazonaws.com/splitwise/uploads/user/default_avatars/avatar-orange35-200px.png"
+      },
+      "custom_picture": false,
+      "email": "test+sdk@example.com",
+      "registration_status": "confirmed",
+      "force_refresh_at": null,
+      "locale": "en",
+      "country_code": "US",
+      "date_format": "MM/DD/YYYY",
+      "default_currency": "USD",
+      "default_group_id": -1,
+      "notifications_read": "2012-07-17T23:54:29Z",
+      "notifications_count": 0,
+      "notifications": {
+        "added_as_friend": true,
+        "added_to_group": true,
+        "expense_added": true,
+        "expense_updated": true,
+        "bills": true,
+        "payments": true,
+        "monthly_summary": true,
+        "announcements": true
+      },
+      "add_friend_url": "https://www.splitwise.com/l/add_friend/SCRUBBED"
+    }
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "_meta": {
+    "fixture": "delete-friend",
+    "endpoint": "/delete_friend/120153425",
+    "method": "POST",
+    "statusCode": 200,
+    "generatedAt": "2026-05-03T04:38:20.430Z",
+    "reviewRequired": true
+  },
+  "headers": {
+    "content-type": "application/json; charset=utf-8"
+  },
+  "body": {
+    "success": true,
+    "error": null
+  }
+}

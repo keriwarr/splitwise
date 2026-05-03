@@ -82,6 +82,16 @@ const ALWAYS_SCRUB_FIELDS: ReadonlyMap<string, string> = new Map([
   ['invite_link', SCRUB.inviteLink],
 ]);
 
+// Free-text fields where we should do *substring* scrubbing, not just exact
+// match. The Splitwise API embeds the user's first name inside auto-generated
+// comment content like "<first_name> updated this transaction: ...".
+const FREE_TEXT_FIELDS: ReadonlySet<string> = new Set([
+  'content',
+  'description',
+  'details',
+  'whiteboard',
+]);
+
 // ===== HTTP helpers =========================================================
 
 interface ApiCallSpec {
@@ -210,6 +220,11 @@ function scrub(body: unknown, map: ScrubMap): unknown {
       const fieldReplacement = ALWAYS_SCRUB_FIELDS.get(k);
       if (fieldReplacement !== undefined && typeof v === 'string') {
         out[k] = fieldReplacement;
+      } else if (typeof v === 'string' && FREE_TEXT_FIELDS.has(k)) {
+        // Substring-scrub free-text fields (e.g. comment content / expense
+        // details), where the API may embed the user's name in auto-generated
+        // text like "<first_name> updated this transaction: ...".
+        out[k] = scrubFreeText(v, map);
       } else {
         out[k] = scrub(v, map);
       }
@@ -222,6 +237,16 @@ function scrub(body: unknown, map: ScrubMap): unknown {
     return body;
   }
   return body;
+}
+
+/** Substring scrubbing for free-text fields. */
+function scrubFreeText(value: string, map: ScrubMap): string {
+  let out = value;
+  for (const [needle, replacement] of map.values) {
+    if (needle.length === 0) continue;
+    out = out.split(needle).join(replacement);
+  }
+  return out;
 }
 
 interface RunContext {
