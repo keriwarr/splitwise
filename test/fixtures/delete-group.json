@@ -1,0 +1,16 @@
+{
+  "_meta": {
+    "fixture": "delete-group",
+    "endpoint": "/delete_group/96944575",
+    "method": "POST",
+    "statusCode": 200,
+    "generatedAt": "2026-05-03T04:38:19.934Z",
+    "reviewRequired": true
+  },
+  "headers": {
+    "content-type": "application/json; charset=utf-8"
+  },
+  "body": {
+    "success": true
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "_meta": {
+    "fixture": "example",
+    "endpoint": "/test",
+    "method": "GET",
+    "statusCode": 200,
+    "generatedAt": "2026-05-02T00:00:00.000Z",
+    "reviewRequired": false
+  },
+  "headers": {
+    "content-type": "application/json; charset=utf-8",
+    "x-ratelimit-limit": "100",
+    "x-ratelimit-remaining": "99"
+  },
+  "body": {
+    "success": true,
+    "message": "hand-written example fixture"
+  }
+}

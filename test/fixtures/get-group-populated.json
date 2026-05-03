@@ -1,0 +1,102 @@
+{
+  "_meta": {
+    "fixture": "get-group-populated",
+    "endpoint": "/get_group/96944575",
+    "method": "GET",
+    "statusCode": 200,
+    "generatedAt": "2026-05-03T04:38:15.005Z",
+    "reviewRequired": true
+  },
+  "headers": {
+    "content-type": "application/json; charset=utf-8"
+  },
+  "body": {
+    "group": {
+      "id": 96944575,
+      "name": "sdk-fixture-test-group-akn16y",
+      "created_at": "2026-05-03T04:38:11Z",
+      "updated_at": "2026-05-03T04:38:13Z",
+      "members": [
+        {
+          "id": 120152902,
+          "first_name": "Test",
+          "last_name": null,
+          "picture": {
+            "small": "https://s3.amazonaws.com/splitwise/uploads/user/default_avatars/avatar-orange35-50px.png",
+            "medium": "https://s3.amazonaws.com/splitwise/uploads/user/default_avatars/avatar-orange35-100px.png",
+            "large": "https://s3.amazonaws.com/splitwise/uploads/user/default_avatars/avatar-orange35-200px.png"
+          },
+          "custom_picture": false,
+          "email": "test+sdk@example.com",
+          "registration_status": "confirmed",
+          "balance": [
+            {
+              "currency_code": "USD",
+              "amount": "10.0"
+            }
+          ]
+        },
+        {
+          "id": 120153425,
+          "first_name": "Sdk",
+          "last_name": "Test",
+          "picture": {
+            "small": "https://s3.amazonaws.com/splitwise/uploads/user/default_avatars/avatar-placeholder-50px.png",
+            "medium": "https://s3.amazonaws.com/splitwise/uploads/user/default_avatars/avatar-placeholder-100px.png",
+            "large": "https://s3.amazonaws.com/splitwise/uploads/user/default_avatars/avatar-placeholder-200px.png"
+          },
+          "custom_picture": false,
+          "email": "sdk-fixture-test-friend-akn16y@example.com",
+          "registration_status": "dummy",
+          "balance": [
+            {
+              "currency_code": "USD",
+              "amount": "-10.0"
+            }
+          ]
+        }
+      ],
+      "simplify_by_default": true,
+      "original_debts": [
+        {
+          "from": 120153425,
+          "to": 120152902,
+          "amount": "10.0",
+          "currency_code": "USD"
+        }
+      ],
+      "simplified_debts": [
+        {
+          "from": 120153425,
+          "to": 120152902,
+          "amount": "10.0",
+          "currency_code": "USD"
+        }
+      ],
+      "whiteboard": null,
+      "whiteboard_lock_version": 0,
+      "whiteboard_updated_at": null,
+      "whiteboard_updated_by": null,
+      "group_type": "other",
+      "invite_link": "https://www.splitwise.com/l/SCRUBBED",
+      "group_reminders": null,
+      "avatar": {
+        "small": "https://s3.amazonaws.com/splitwise/uploads/group/default_avatars/avatar-blue26-other-50px.png",
+        "medium": "https://s3.amazonaws.com/splitwise/uploads/group/default_avatars/avatar-blue26-other-100px.png",
+        "large": "https://s3.amazonaws.com/splitwise/uploads/group/default_avatars/avatar-blue26-other-200px.png",
+        "xlarge": "https://s3.amazonaws.com/splitwise/uploads/group/default_avatars/avatar-blue26-other-500px.png",
+        "xxlarge": "https://s3.amazonaws.com/splitwise/uploads/group/default_avatars/avatar-blue26-other-1000px.png",
+        "original": null
+      },
+      "tall_avatar": {
+        "xlarge": "https://s3.amazonaws.com/splitwise/uploads/group/default_tall_avatars/avatar-blue26-other-288px.png",
+        "large": "https://s3.amazonaws.com/splitwise/uploads/group/default_tall_avatars/avatar-blue26-other-192px.png"
+      },
+      "custom_avatar": false,
+      "cover_photo": {
+        "xxlarge": "https://s3.amazonaws.com/splitwise/uploads/group/default_cover_photos/blue-other-1000px.png",
+        "xlarge": "https://s3.amazonaws.com/splitwise/uploads/group/default_cover_photos/blue-other-500px.png"
+      }
+    }
+  }
+}

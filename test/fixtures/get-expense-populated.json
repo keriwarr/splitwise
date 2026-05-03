@@ -1,0 +1,140 @@
+{
+  "_meta": {
+    "fixture": "get-expense-populated",
+    "endpoint": "/get_expense/4439523204",
+    "method": "GET",
+    "statusCode": 200,
+    "generatedAt": "2026-05-03T04:38:15.947Z",
+    "reviewRequired": true
+  },
+  "headers": {
+    "content-type": "application/json; charset=utf-8"
+  },
+  "body": {
+    "expense": {
+      "id": 4439523204,
+      "group_id": 96944575,
+      "expense_bundle_id": null,
+      "description": "sdk-fixture-test expense (updated)",
+      "repeats": false,
+      "repeat_interval": null,
+      "email_reminder": false,
+      "email_reminder_in_advance": -1,
+      "next_repeat": null,
+      "details": null,
+      "comments_count": 2,
+      "payment": false,
+      "creation_method": null,
+      "transaction_method": "offline",
+      "transaction_confirmed": false,
+      "transaction_id": null,
+      "transaction_status": null,
+      "cost": "20.0",
+      "currency_code": "USD",
+      "repayments": [
+        {
+          "from": 120153425,
+          "to": 120152902,
+          "amount": "10.0"
+        }
+      ],
+      "date": "2026-05-03T04:38:12Z",
+      "created_at": "2026-05-03T04:38:12Z",
+      "created_by": {
+        "id": 120152902,
+        "first_name": "Test",
+        "last_name": null,
+        "picture": {
+          "medium": "https://s3.amazonaws.com/splitwise/uploads/user/default_avatars/avatar-orange35-100px.png"
+        },
+        "custom_picture": false
+      },
+      "updated_at": "2026-05-03T04:38:13Z",
+      "updated_by": {
+        "id": 120152902,
+        "first_name": "Test",
+        "last_name": null,
+        "picture": {
+          "medium": "https://s3.amazonaws.com/splitwise/uploads/user/default_avatars/avatar-orange35-100px.png"
+        },
+        "custom_picture": false
+      },
+      "deleted_at": null,
+      "deleted_by": null,
+      "category": {
+        "id": 18,
+        "name": "General"
+      },
+      "receipt": {
+        "large": null,
+        "original": null
+      },
+      "users": [
+        {
+          "user": {
+            "id": 120152902,
+            "first_name": "Test",
+            "last_name": null,
+            "picture": {
+              "medium": "https://s3.amazonaws.com/splitwise/uploads/user/default_avatars/avatar-orange35-100px.png"
+            }
+          },
+          "user_id": 120152902,
+          "paid_share": "20.0",
+          "owed_share": "10.0",
+          "net_balance": "10.0"
+        },
+        {
+          "user": {
+            "id": 120153425,
+            "first_name": "Sdk",
+            "last_name": "Test",
+            "picture": {
+              "medium": "https://s3.amazonaws.com/splitwise/uploads/user/default_avatars/avatar-placeholder-100px.png"
+            }
+          },
+          "user_id": 120153425,
+          "paid_share": "0.0",
+          "owed_share": "10.0",
+          "net_balance": "-10.0"
+        }
+      ],
+      "comments": [
+        {
+          "id": 1033847394,
+          "content": "Test updated this transaction:\n- Description changed from 'sdk-fixture-test expense' to 'sdk-fixture-test expense (updated)'",
+          "comment_type": "System",
+          "relation_type": "ExpenseComment",
+          "relation_id": 4439523204,
+          "created_at": "2026-05-03T04:38:13Z",
+          "deleted_at": null,
+          "user": {
+            "id": 0,
+            "first_name": "Splitwise",
+            "last_name": null,
+            "picture": {
+              "medium": null
+            }
+          }
+        },
+        {
+          "id": 1033847399,
+          "content": "sdk-fixture-test comment",
+          "comment_type": "User",
+          "relation_type": "ExpenseComment",
+          "relation_id": 4439523204,
+          "created_at": "2026-05-03T04:38:13Z",
+          "deleted_at": null,
+          "user": {
+            "id": 120152902,
+            "first_name": "Test",
+            "last_name": null,
+            "picture": {
+              "medium": "https://s3.amazonaws.com/splitwise/uploads/user/default_avatars/avatar-orange35-100px.png"
+            }
+          }
+        }
+      ]
+    }
+  }
+}

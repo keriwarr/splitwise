@@ -1,0 +1,36 @@
+{
+  "_meta": {
+    "fixture": "create-friend",
+    "endpoint": "/create_friend",
+    "method": "POST",
+    "statusCode": 200,
+    "generatedAt": "2026-05-03T04:38:11.130Z",
+    "reviewRequired": true
+  },
+  "headers": {
+    "content-type": "application/json; charset=utf-8"
+  },
+  "body": {
+    "friend": {
+      "id": 120153425,
+      "first_name": "Sdk",
+      "last_name": "Test",
+      "email": "sdk-fixture-test-friend-akn16y@example.com",
+      "registration_status": "dummy",
+      "picture": {
+        "small": "https://s3.amazonaws.com/splitwise/uploads/user/default_avatars/avatar-placeholder-50px.png",
+        "medium": "https://s3.amazonaws.com/splitwise/uploads/user/default_avatars/avatar-placeholder-100px.png",
+        "large": "https://s3.amazonaws.com/splitwise/uploads/user/default_avatars/avatar-placeholder-200px.png"
+      },
+      "custom_picture": false,
+      "balance": [],
+      "groups": [
+        {
+          "group_id": 0,
+          "balance": []
+        }
+      ],
+      "updated_at": "2026-05-03T04:38:10Z"
+    }
+  }
+}

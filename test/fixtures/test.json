@@ -1,0 +1,22 @@
+{
+  "_meta": {
+    "fixture": "test",
+    "endpoint": "/test",
+    "method": "GET",
+    "statusCode": 200,
+    "generatedAt": "2026-05-03T04:38:10.587Z",
+    "reviewRequired": true
+  },
+  "headers": {
+    "content-type": "application/json; charset=utf-8"
+  },
+  "body": {
+    "client_id": 11454,
+    "token": {
+      "access_token": "SCRUBBED",
+      "token_type": "bearer"
+    },
+    "request_url": "https://secure.splitwise.com/api/v3.0/test",
+    "params": {}
+  }
+}
