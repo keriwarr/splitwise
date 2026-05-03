@@ -1,0 +1,18 @@
+{
+  "name": "splitwise-example-cli",
+  "version": "0.0.0",
+  "private": true,
+  "description": "CLI example: print a summary of the authenticated user's Splitwise account using the Client Credentials OAuth flow.",
+  "type": "module",
+  "scripts": {
+    "start": "tsx index.ts"
+  },
+  "dependencies": {
+    "splitwise": "file:../.."
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0"
+  }
+}

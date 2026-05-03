@@ -355,6 +355,15 @@ v2 is a breaking API change end-to-end. The mapping is mostly mechanical, but re
 
 - **New: end-user OAuth.** v2 ships an Authorization Code + PKCE flow for accessing data belonging to users other than the app owner — a long-standing limitation of v1.
 
+## Examples
+
+Two runnable demos live in [`examples/`](./examples/):
+
+- [`cli-client-credentials/`](./examples/cli-client-credentials/) — a small CLI that uses Client Credentials to print a summary of the authenticated user's account.
+- [`web-auth-code/`](./examples/web-auth-code/) — a tiny Express app that logs users in via the Authorization Code + PKCE flow and shows their dashboard.
+
+Each example has its own README and is set up as a self-contained project. Use them as a copy-paste starting point for your own integrations.
+
 ## License
 
 [MIT](./LICENSE)
