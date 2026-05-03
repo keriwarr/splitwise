@@ -36,6 +36,7 @@ import type {
   OAuthToken,
 } from './auth/types.js';
 import { HttpClient, type Hooks, type RequestOverrides } from './http.js';
+import { SDK_VERSION } from './version.js';
 import { Categories } from './resources/categories.js';
 import { Comments } from './resources/comments.js';
 import { Currencies } from './resources/currencies.js';
@@ -79,6 +80,19 @@ export interface SplitwiseConfig {
    * called synchronously per attempt; thrown errors are caught and logged.
    */
   hooks?: Hooks;
+  /**
+   * Identifies the calling application in the User-Agent header. Helps the
+   * Splitwise team trace requests back to a specific app/plugin if you need
+   * support; useful for telemetry on your own end too.
+   */
+  appInfo?: AppInfo;
+}
+
+/** Identifies a calling application; concatenated into the User-Agent header. */
+export interface AppInfo {
+  name: string;
+  version?: string;
+  url?: string;
 }
 
 const ALLOWED_CONFIG_KEYS: ReadonlySet<keyof SplitwiseConfig> = new Set([
@@ -92,7 +106,17 @@ const ALLOWED_CONFIG_KEYS: ReadonlySet<keyof SplitwiseConfig> = new Set([
   'logLevel',
   'fetch',
   'hooks',
+  'appInfo',
 ]);
+
+function buildUserAgent(appInfo: AppInfo | undefined): string {
+  const base = `splitwise-node/${SDK_VERSION}`;
+  if (appInfo === undefined) return base;
+  let app = appInfo.name;
+  if (appInfo.version !== undefined) app += `/${appInfo.version}`;
+  if (appInfo.url !== undefined) app += ` (${appInfo.url})`;
+  return `${base} ${app}`;
+}
 
 export class Splitwise {
   readonly expenses: Expenses;
@@ -118,6 +142,7 @@ export class Splitwise {
     this.http = new HttpClient({
       baseUrl: config.baseUrl ?? DEFAULT_BASE_URL,
       getAccessToken: () => this.getAccessToken(),
+      userAgent: buildUserAgent(config.appInfo),
       ...(this.fetchImpl !== undefined && { fetch: this.fetchImpl }),
       ...(config.timeout !== undefined && { timeout: config.timeout }),
       ...(config.maxRetries !== undefined && { maxRetries: config.maxRetries }),

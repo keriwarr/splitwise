@@ -68,6 +68,53 @@ describe('Splitwise client', () => {
   });
 
   describe('end-to-end with mock fetch', () => {
+    it('sends User-Agent with the SDK version by default', async () => {
+      const fetchImpl = vi.fn(async () =>
+        jsonResponse({ user: { id: 1, first_name: 'X', last_name: 'Y' } }),
+      );
+      const sw = new Splitwise({ accessToken: 't', fetch: fetchImpl });
+      await sw.users.getCurrent();
+      const [, init] = fetchImpl.mock.calls[0]!;
+      const headers = (init as RequestInit).headers as Record<string, string>;
+      expect(headers['User-Agent']).toMatch(/^splitwise-node\/\d/);
+    });
+
+    it('appends appInfo to the User-Agent', async () => {
+      const fetchImpl = vi.fn(async () =>
+        jsonResponse({ user: { id: 1, first_name: 'X', last_name: 'Y' } }),
+      );
+      const sw = new Splitwise({
+        accessToken: 't',
+        fetch: fetchImpl,
+        appInfo: {
+          name: 'my-app',
+          version: '1.4.2',
+          url: 'https://github.com/me/my-app',
+        },
+      });
+      await sw.users.getCurrent();
+      const [, init] = fetchImpl.mock.calls[0]!;
+      const headers = (init as RequestInit).headers as Record<string, string>;
+      expect(headers['User-Agent']).toMatch(
+        /^splitwise-node\/\S+ my-app\/1\.4\.2 \(https:\/\/github\.com\/me\/my-app\)$/,
+      );
+    });
+
+    it('appInfo with only name still produces a valid User-Agent', async () => {
+      const fetchImpl = vi.fn(async () =>
+        jsonResponse({ user: { id: 1, first_name: 'X', last_name: 'Y' } }),
+      );
+      const sw = new Splitwise({
+        accessToken: 't',
+        fetch: fetchImpl,
+        appInfo: { name: 'minimal-app' },
+      });
+      await sw.users.getCurrent();
+      const [, init] = fetchImpl.mock.calls[0]!;
+      const headers = (init as RequestInit).headers as Record<string, string>;
+      expect(headers['User-Agent']).toMatch(/^splitwise-node\/\S+ minimal-app$/);
+    });
+
     it('uses provided accessToken as bearer', async () => {
       const fetchImpl = vi.fn(async () =>
         jsonResponse({ user: { id: 1, first_name: 'Test', last_name: 'User' } }),

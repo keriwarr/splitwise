@@ -1,7 +1,8 @@
 // Public exports for the Splitwise SDK v2.
 
 export { Splitwise } from './client.js';
-export type { SplitwiseConfig } from './client.js';
+export type { AppInfo, SplitwiseConfig } from './client.js';
+export { SDK_VERSION } from './version.js';
 
 export {
   SplitwiseError,
