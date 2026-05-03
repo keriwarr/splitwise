@@ -1,0 +1,16 @@
+{
+  "_meta": {
+    "fixture": "get-expenses-page2",
+    "endpoint": "/get_expenses?limit=5&offset=5",
+    "method": "GET",
+    "statusCode": 200,
+    "generatedAt": "2026-05-03T04:17:16.388Z",
+    "reviewRequired": true
+  },
+  "headers": {
+    "content-type": "application/json; charset=utf-8"
+  },
+  "body": {
+    "expenses": []
+  }
+}

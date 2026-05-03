@@ -1,0 +1,59 @@
+{
+  "_meta": {
+    "fixture": "get-groups",
+    "endpoint": "/get_groups",
+    "method": "GET",
+    "statusCode": 200,
+    "generatedAt": "2026-05-03T04:17:15.497Z",
+    "reviewRequired": true
+  },
+  "headers": {
+    "content-type": "application/json; charset=utf-8"
+  },
+  "body": {
+    "groups": [
+      {
+        "id": 0,
+        "name": "Non-group expenses",
+        "created_at": "2026-05-03T04:12:31Z",
+        "updated_at": "2026-05-03T04:17:15Z",
+        "members": [
+          {
+            "id": 120152902,
+            "first_name": "Test",
+            "last_name": null,
+            "picture": {
+              "small": "https://s3.amazonaws.com/splitwise/uploads/user/default_avatars/avatar-orange35-50px.png",
+              "medium": "https://s3.amazonaws.com/splitwise/uploads/user/default_avatars/avatar-orange35-100px.png",
+              "large": "https://s3.amazonaws.com/splitwise/uploads/user/default_avatars/avatar-orange35-200px.png"
+            },
+            "custom_picture": false,
+            "email": "test+sdk@example.com",
+            "registration_status": "confirmed",
+            "balance": []
+          }
+        ],
+        "simplify_by_default": false,
+        "original_debts": [],
+        "simplified_debts": [],
+        "avatar": {
+          "small": "https://s3.amazonaws.com/splitwise/uploads/group/default_avatars/v2021/avatar-nongroup-50px.png",
+          "medium": "https://s3.amazonaws.com/splitwise/uploads/group/default_avatars/v2021/avatar-nongroup-100px.png",
+          "large": "https://s3.amazonaws.com/splitwise/uploads/group/default_avatars/v2021/avatar-nongroup-200px.png",
+          "xlarge": "https://s3.amazonaws.com/splitwise/uploads/group/default_avatars/v2021/avatar-nongroup-500px.png",
+          "xxlarge": "https://s3.amazonaws.com/splitwise/uploads/group/default_avatars/v2021/avatar-nongroup-1000px.png",
+          "original": null
+        },
+        "tall_avatar": {
+          "xlarge": "https://s3.amazonaws.com/splitwise/uploads/group/default_tall_avatars/avatar-nongroup-288px.png",
+          "large": "https://s3.amazonaws.com/splitwise/uploads/group/default_tall_avatars/avatar-nongroup-192px.png"
+        },
+        "custom_avatar": false,
+        "cover_photo": {
+          "xxlarge": "https://s3.amazonaws.com/splitwise/uploads/group/default_cover_photos/coverphoto-nongroup-1000px.png",
+          "xlarge": "https://s3.amazonaws.com/splitwise/uploads/group/default_cover_photos/coverphoto-nongroup-500px.png"
+        }
+      }
+    ]
+  }
+}

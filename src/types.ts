@@ -280,7 +280,8 @@ export interface GetMainDataParams {
 export interface User {
   id: number;
   firstName: string;
-  lastName: string;
+  /** May be null on the API; some accounts have first name only. */
+  lastName: string | null;
   email?: string;
   registrationStatus?: string;
   picture?: Picture;
@@ -300,6 +301,10 @@ export interface CurrentUser extends User {
   /** Per OpenAPI this is an open-ended bag of boolean flags; new keys may
    *  appear without notice. */
   notifications?: Record<string, boolean>;
+  /** Undocumented but present on /get_current_user. */
+  countryCode?: string;
+  forceRefreshAt?: string | null;
+  addFriendUrl?: string;
 }
 
 // -- Groups ------------------------------------------------------------------
@@ -333,6 +338,7 @@ export interface Group {
   id: number;
   name: string;
   groupType?: string;
+  createdAt?: string;
   updatedAt?: string;
   simplifyByDefault?: boolean;
   members?: GroupMember[];
@@ -342,6 +348,8 @@ export interface Group {
   whiteboard?: string | null;
   inviteLink?: string;
   avatar?: GroupAvatar;
+  /** Undocumented variant returned alongside `avatar`. */
+  tallAvatar?: { xlarge?: string; large?: string };
   customAvatar?: boolean;
   coverPhoto?: GroupCoverPhoto;
 }
@@ -411,6 +419,8 @@ export interface CategoryIconTypes {
    *  small/medium/large picture sizes. */
   square?: { large?: string; xlarge?: string };
   slim?: { small?: string; large?: string };
+  /** Undocumented but present in real responses. */
+  transparent?: { large?: string; xlarge?: string };
 }
 
 export interface Category {

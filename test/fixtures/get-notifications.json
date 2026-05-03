@@ -1,0 +1,16 @@
+{
+  "_meta": {
+    "fixture": "get-notifications",
+    "endpoint": "/get_notifications",
+    "method": "GET",
+    "statusCode": 200,
+    "generatedAt": "2026-05-03T04:17:18.154Z",
+    "reviewRequired": true
+  },
+  "headers": {
+    "content-type": "application/json; charset=utf-8"
+  },
+  "body": {
+    "notifications": []
+  }
+}

@@ -202,11 +202,21 @@ describe('Splitwise client', () => {
   });
 
   describe('top-level utility methods', () => {
-    it('test() returns { success: true } on success', async () => {
-      const fetchImpl = vi.fn(async () => jsonResponse({ success: true }));
+    it('test() returns the whoami payload (client_id, token, etc.)', async () => {
+      const fetchImpl = vi.fn(async () =>
+        jsonResponse({
+          client_id: 11454,
+          token: { access_token: 'tok123', token_type: 'bearer' },
+          request_url: 'https://secure.splitwise.com/api/v3.0/test',
+          params: {},
+        }),
+      );
       const sw = new Splitwise({ accessToken: 't', fetch: fetchImpl });
       const result = await sw.test();
-      expect(result).toEqual({ success: true });
+      expect(result.clientId).toBe(11454);
+      expect(result.token.accessToken).toBe('tok123');
+      expect(result.token.tokenType).toBe('bearer');
+      expect(result.requestUrl).toContain('/test');
     });
 
     it('parseSentence posts to /parse_sentence', async () => {

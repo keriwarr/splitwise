@@ -133,14 +133,21 @@ export class Splitwise {
   // Top-level utility methods (not natural fits for any resource)
   // ---------------------------------------------------------------------------
 
-  /** Smoke-test the API. Returns `{ success: true }` on success. */
-  async test(): Promise<{ success: boolean }> {
-    const result = await this.http.get<{ success?: boolean } | boolean>(
-      '/test',
-    );
-    const success =
-      typeof result === 'boolean' ? result : (result.success ?? true);
-    return { success };
+  /**
+   * Returns identifying info about the authenticated client. Useful as a
+   * smoke test ("am I authenticated?") and for confirming which app/token
+   * the SDK is using.
+   *
+   * Despite the name, the endpoint is closer to a `whoami` than a generic
+   * health check.
+   */
+  async test(): Promise<{
+    clientId: number;
+    token: { accessToken: string; tokenType: string };
+    requestUrl: string;
+    params: Record<string, unknown>;
+  }> {
+    return this.http.get('/test');
   }
 
   /** Parse a natural-language expense description (e.g. "I owe Bob $10"). */
