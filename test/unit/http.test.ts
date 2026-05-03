@@ -191,8 +191,47 @@ describe('HttpClient', () => {
       expect(form.get('description')).toBe('Lunch');
       expect(form.get('users__0__user_id')).toBe('1');
       expect(form.get('users__0__paid_share')).toBe('10.00');
-      expect(form.get('receipt')).toBeInstanceOf(Blob);
-      expect((form.get('receipt') as Blob).type).toBe('image/jpeg');
+      // FormData wraps a bare Blob as a File when given a filename, so the
+      // retrieved value is a File (which is a Blob).
+      const receipt = form.get('receipt') as Blob;
+      expect(receipt).toBeInstanceOf(Blob);
+      expect(receipt.type).toBe('image/jpeg');
+      // Bare Blob -> default filename derived from the MIME subtype.
+      expect((receipt as Blob & { name?: string }).name).toBe('blob.jpeg');
+    });
+
+    it('preserves File.name when uploading a File (not a bare Blob)', async () => {
+      const { client, fetchMock } = makeClient(async () =>
+        jsonResponse(200, { expenses: [{ id: 1 }] }),
+      );
+
+      const file = new File(['fake'], 'receipt-2026-05-03.png', {
+        type: 'image/png',
+      });
+      await client.post('/create_expense', {
+        body: { cost: '5.00', description: 'X', receipt: file },
+      });
+
+      const form = (fetchMock.mock.calls[0]![1] as RequestInit).body as FormData;
+      const got = form.get('receipt') as Blob & { name?: string };
+      expect(got.name).toBe('receipt-2026-05-03.png');
+    });
+
+    it('handles Blobs nested in arrays/objects (uses flattened key)', async () => {
+      const { client, fetchMock } = makeClient(async () =>
+        jsonResponse(200, {}),
+      );
+
+      const blob = new Blob(['x'], { type: 'image/png' });
+      await client.post('/something', {
+        body: {
+          attachments: [{ file: blob, label: 'main' }],
+        },
+      });
+
+      const form = (fetchMock.mock.calls[0]![1] as RequestInit).body as FormData;
+      expect(form.get('attachments__0__file')).toBeInstanceOf(Blob);
+      expect(form.get('attachments__0__label')).toBe('main');
     });
   });
 

@@ -395,6 +395,18 @@ function validateConfig(config: SplitwiseConfig): void {
     }
   }
 
+  // Reject empty strings explicitly -- they would otherwise pass the
+  // !== undefined check and produce a useless `Bearer ` header at request time.
+  if (config.accessToken !== undefined && config.accessToken.length === 0) {
+    throw new TypeError('Splitwise: accessToken cannot be an empty string');
+  }
+  if (config.consumerKey !== undefined && config.consumerKey.length === 0) {
+    throw new TypeError('Splitwise: consumerKey cannot be an empty string');
+  }
+  if (config.consumerSecret !== undefined && config.consumerSecret.length === 0) {
+    throw new TypeError('Splitwise: consumerSecret cannot be an empty string');
+  }
+
   const hasToken = config.accessToken !== undefined;
   const hasCreds =
     config.consumerKey !== undefined && config.consumerSecret !== undefined;

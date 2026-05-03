@@ -87,11 +87,25 @@ export function keysToCamelCase(obj: unknown): unknown {
 // Parameter flattening for the Splitwise API
 // ---------------------------------------------------------------------------
 
-type FlatValue = string | number | boolean;
+/**
+ * Result entry from flattening — most values become a primitive plus their
+ * key. Blobs are kept as-is because they need to ride a multipart payload
+ * (the caller is responsible for building the FormData).
+ */
+export type FlatValue = string | number | boolean | Blob;
 
 /**
  * Flattens nested objects/arrays into Splitwise's double-underscore notation
  * and converts booleans to 0/1 integers. All keys are converted to snake_case.
+ *
+ * Notable conversions:
+ *   - Date → ISO string (otherwise Date has no enumerable own properties and
+ *     would silently disappear)
+ *   - Blob/File → preserved as-is so multipart construction can pick them up
+ *     (the caller must check for Blob values before form-urlencoding)
+ *   - URL → string form
+ *   - Anything else non-plain-object that has a sensible `toString()` is
+ *     stringified rather than silently dropped
  *
  * Example:
  *   { users: [{ userId: 1, paidShare: "10" }] }
@@ -117,6 +131,21 @@ export function flattenParams(
       return;
     }
 
+    if (value instanceof Date) {
+      result[prefix] = value.toISOString();
+      return;
+    }
+
+    if (value instanceof Blob) {
+      result[prefix] = value;
+      return;
+    }
+
+    if (typeof URL !== 'undefined' && value instanceof URL) {
+      result[prefix] = value.toString();
+      return;
+    }
+
     if (Array.isArray(value)) {
       for (let i = 0; i < value.length; i++) {
         walk(value[i], `${prefix}__${i}`);
@@ -131,26 +160,15 @@ export function flattenParams(
       }
       return;
     }
+
+    // Fallback: anything else (BigInt, custom class, etc.) gets stringified
+    // rather than silently dropped. Better a "[object Foo]" in the request
+    // than a missing field that's hard to diagnose.
+    result[prefix] = String(value);
   }
 
   for (const [key, value] of Object.entries(obj)) {
-    const snakeKey = toSnakeCase(key);
-
-    if (
-      value === null ||
-      value === undefined
-    ) {
-      continue;
-    }
-
-    if (typeof value === 'boolean') {
-      result[snakeKey] = value ? 1 : 0;
-    } else if (typeof value === 'string' || typeof value === 'number') {
-      result[snakeKey] = value;
-    } else {
-      // Arrays or nested objects — recurse with the top-level key as prefix
-      walk(value, snakeKey);
-    }
+    walk(value, toSnakeCase(key));
   }
 
   return result;

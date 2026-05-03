@@ -289,4 +289,42 @@ describe('flattenParams', () => {
       repayments__debt_to: 2,
     });
   });
+
+  test('converts Date values to ISO strings', () => {
+    const date = new Date('2026-05-03T12:00:00Z');
+    expect(flattenParams({ updatedAfter: date })).toEqual({
+      updated_after: '2026-05-03T12:00:00.000Z',
+    });
+  });
+
+  test('converts nested Date values inside arrays/objects', () => {
+    const date = new Date('2026-05-03T12:00:00Z');
+    expect(
+      flattenParams({ window: { start: date, end: date } }),
+    ).toEqual({
+      window__start: '2026-05-03T12:00:00.000Z',
+      window__end: '2026-05-03T12:00:00.000Z',
+    });
+  });
+
+  test('preserves Blob values for the multipart path to consume', () => {
+    const blob = new Blob(['fake'], { type: 'image/jpeg' });
+    expect(flattenParams({ receipt: blob })).toEqual({ receipt: blob });
+  });
+
+  test('preserves Blobs nested in objects/arrays', () => {
+    const blob = new Blob(['fake'], { type: 'image/png' });
+    expect(
+      flattenParams({ attachments: [{ file: blob, label: 'main' }] }),
+    ).toEqual({
+      attachments__0__file: blob,
+      attachments__0__label: 'main',
+    });
+  });
+
+  test('stringifies URL values', () => {
+    expect(flattenParams({ next: new URL('https://example.com/x') })).toEqual({
+      next: 'https://example.com/x',
+    });
+  });
 });

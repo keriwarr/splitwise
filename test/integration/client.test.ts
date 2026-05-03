@@ -41,6 +41,19 @@ describe('Splitwise client', () => {
       expect(() => new Splitwise({ consumerSecret: 's' })).toThrow();
     });
 
+    it('rejects empty-string accessToken', () => {
+      expect(() => new Splitwise({ accessToken: '' })).toThrow(/empty string/);
+    });
+
+    it('rejects empty-string consumerKey/consumerSecret', () => {
+      expect(
+        () => new Splitwise({ consumerKey: '', consumerSecret: 's' }),
+      ).toThrow(/empty string/);
+      expect(
+        () => new Splitwise({ consumerKey: 'k', consumerSecret: '' }),
+      ).toThrow(/empty string/);
+    });
+
     it('gives a helpful error for v1 default-ID config keys', () => {
       expect(
         () =>

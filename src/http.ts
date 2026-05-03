@@ -183,6 +183,10 @@ function buildQueryString(query: Record<string, unknown>): string {
   const flat = flattenParams(query);
   const params = new URLSearchParams();
   for (const [key, value] of Object.entries(flat)) {
+    // Blobs can't go in a URL query string. Skip them rather than emitting
+    // "[object Blob]"; if the caller wanted a file upload they should pass it
+    // in the body, not the query.
+    if (value instanceof Blob) continue;
     params.append(key, String(value));
   }
   const str = params.toString();
@@ -207,31 +211,36 @@ function containsBlob(value: unknown): boolean {
 }
 
 /**
- * Builds a multipart/form-data FormData from a request body. Non-Blob values
- * are flattened with the same `users__0__user_id` convention used for
- * form-urlencoded; Blob values are appended as-is so they're sent as files.
+ * Builds a multipart/form-data FormData from a request body. Uses the same
+ * flattening pass as the form-urlencoded path so nested Blobs (e.g. an array
+ * of receipts) ride correctly under their flattened keys.
+ *
+ * File-class Blobs preserve their `name` property; bare Blobs get a generic
+ * "blob" filename so the API doesn't reject them as missing-filename.
  */
 function buildMultipartBody(body: Record<string, unknown>): FormData {
   const form = new FormData();
-  for (const [key, value] of Object.entries(body)) {
-    if (value === undefined || value === null) continue;
+  const flat = flattenParams(body);
+  for (const [key, value] of Object.entries(flat)) {
     if (value instanceof Blob) {
-      // The Splitwise API expects snake_case field names.
-      form.append(snakeCaseKey(key), value);
+      const filename =
+        // File extends Blob and has its own `name` property.
+        (value as Blob & { name?: string }).name ?? defaultBlobFilename(value);
+      form.append(key, value, filename);
     } else {
-      // Flatten this single-key subtree using the existing helper, which
-      // applies snake_case conversion and double-underscore nesting.
-      const flat = flattenParams({ [key]: value });
-      for (const [fk, fv] of Object.entries(flat)) {
-        form.append(fk, String(fv));
-      }
+      form.append(key, String(value));
     }
   }
   return form;
 }
 
-function snakeCaseKey(key: string): string {
-  return key.replace(/[A-Z]/g, (c) => `_${c.toLowerCase()}`);
+/** Pick a sensible default filename for a bare Blob based on its MIME type. */
+function defaultBlobFilename(blob: Blob): string {
+  const subtype = blob.type.split('/')[1]?.split(';')[0]?.trim();
+  if (subtype !== undefined && subtype.length > 0) {
+    return `blob.${subtype}`;
+  }
+  return 'blob';
 }
 
 /** Replace the Authorization header's value with a placeholder for safe logging. */
