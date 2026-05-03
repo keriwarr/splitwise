@@ -35,7 +35,12 @@ import type {
   ExchangeCodeParams,
   OAuthToken,
 } from './auth/types.js';
-import { HttpClient, type Hooks, type RequestOverrides } from './http.js';
+import {
+  HttpClient,
+  type Hooks,
+  type RequestOptions,
+  type RequestOverrides,
+} from './http.js';
 import { SDK_VERSION } from './version.js';
 import { Categories } from './resources/categories.js';
 import { Comments } from './resources/comments.js';
@@ -202,6 +207,39 @@ export class Splitwise {
       ...(params !== undefined && { query: { ...params } }),
       ...overrides,
     });
+  }
+
+  /**
+   * Escape hatch for endpoints not (yet) covered by the typed resource API.
+   *
+   * Goes through the same pipeline as the typed methods (auth, retries,
+   * camelCase conversion, hooks, error mapping), so you don't lose those
+   * niceties — but you have to know the path/shape yourself.
+   *
+   * @example
+   * ```ts
+   * const result = await sw.rawRequest<MyShape>(
+   *   'GET',
+   *   '/some_undocumented_endpoint',
+   *   { query: { limit: 10 } },
+   * );
+   * ```
+   */
+  async rawRequest<T = unknown>(
+    method: 'GET' | 'POST' | 'PUT' | 'DELETE',
+    path: string,
+    options?: RequestOptions,
+  ): Promise<T> {
+    switch (method) {
+      case 'GET':
+        return this.http.get<T>(path, options);
+      case 'POST':
+        return this.http.post<T>(path, options);
+      case 'PUT':
+        return this.http.put<T>(path, options);
+      case 'DELETE':
+        return this.http.delete<T>(path, options);
+    }
   }
 
   // ---------------------------------------------------------------------------

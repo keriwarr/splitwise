@@ -287,6 +287,45 @@ describe('Splitwise client', () => {
     });
   });
 
+  describe('rawRequest escape hatch', () => {
+    it('GET delegates to the http client and returns parsed body', async () => {
+      const fetchImpl = vi.fn(async () => jsonResponse({ foo: 'bar' }));
+      const sw = new Splitwise({ accessToken: 't', fetch: fetchImpl });
+      const result = await sw.rawRequest<{ foo: string }>(
+        'GET',
+        '/get_undocumented',
+      );
+      expect(result).toEqual({ foo: 'bar' });
+      const [url] = fetchImpl.mock.calls[0]!;
+      expect(url).toContain('/get_undocumented');
+    });
+
+    it('POST sends body and forwards options', async () => {
+      const fetchImpl = vi.fn(async () => jsonResponse({ id: 1 }));
+      const sw = new Splitwise({ accessToken: 't', fetch: fetchImpl });
+      await sw.rawRequest('POST', '/some_action', {
+        body: { someParam: 'value', flag: true },
+      });
+      const [, init] = fetchImpl.mock.calls[0]!;
+      const body = (init as RequestInit).body as string;
+      expect(body).toContain('some_param=value');
+      expect(body).toContain('flag=1');
+    });
+
+    it('respects unwrapKey when supplied', async () => {
+      const fetchImpl = vi.fn(async () =>
+        jsonResponse({ thing: { id: 42 } }),
+      );
+      const sw = new Splitwise({ accessToken: 't', fetch: fetchImpl });
+      const result = await sw.rawRequest<{ id: number }>(
+        'GET',
+        '/get_thing',
+        { unwrapKey: 'thing' },
+      );
+      expect(result).toEqual({ id: 42 });
+    });
+  });
+
   describe('static auth helpers', () => {
     it('createAuthorizationUrl returns url, state, and codeVerifier', async () => {
       const result = await Splitwise.createAuthorizationUrl({

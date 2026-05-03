@@ -28,6 +28,7 @@ export type {
   ErrorEvent,
   Hooks,
   RequestEvent,
+  RequestOptions,
   RequestOverrides,
   ResponseEvent,
 } from './http.js';
