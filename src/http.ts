@@ -54,7 +54,12 @@ export interface HttpClientConfig {
 export interface Hooks {
   /** Called before each HTTP request leaves the client. */
   onRequest?: (event: RequestEvent) => void;
-  /** Called for each successful response (any 2xx, even with embedded errors). */
+  /**
+   * Called whenever the SDK receives an HTTP response, regardless of status.
+   * Fires for 2xx success, 4xx/5xx errors, and 200 responses with embedded
+   * errors -- i.e. any time the network actually returned something. Pair
+   * with `onError` if you want a separate signal for failures.
+   */
   onResponse?: (event: ResponseEvent) => void;
   /**
    * Called for every error that the SDK is about to throw. Includes both

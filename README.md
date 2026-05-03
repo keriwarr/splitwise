@@ -113,7 +113,7 @@ For the underlying API surface and detailed parameter semantics, see the [offici
 
 | Method | Description |
 |---|---|
-| `list(params?: ExpenseListParams): PagedResult<Expense>` | List expenses (paginated). Filterable by `groupId`, `friendshipId`, date range, etc. |
+| `list(params?: ExpenseListParams): PagedResult<Expense>` | List expenses (paginated). Filterable by `groupId`, `friendId`, date range, etc. |
 | `get(params: { id }): Promise<Expense>` | Fetch a single expense. |
 | `create(params: ExpenseCreateParams): Promise<Expense>` | Create an expense. |
 | `update(params: ExpenseUpdateParams): Promise<Expense>` | Update an existing expense by `id`. |
@@ -343,9 +343,11 @@ v2 is a breaking API change end-to-end. The mapping is mostly mechanical, but re
 
 - **Default IDs removed.** v1 let you pass `group_id`, `user_id`, `expense_id`, or `friend_id` to the constructor and have them applied implicitly. v2 requires explicit IDs on every method call. Passing any of these to the constructor now throws `TypeError` with a migration hint.
 
-- **`sw.test()` returns an object.** It now returns `{ success: boolean }` instead of the raw API response.
+- **`sw.test()` is a whoami.** It now returns `{ clientId, token, requestUrl, params }` rather than a generic boolean. Use it to confirm which app/token the SDK is using.
 
-- **Delete and membership endpoints return `{ success: boolean }`.** `sw.expenses.delete`, `sw.expenses.restore`, `sw.groups.delete`, `sw.groups.restore`, `sw.groups.addUser`, `sw.groups.removeUser`, and `sw.friends.delete` all return `{ success: boolean }` instead of a bare boolean.
+- **Delete and membership endpoints throw on failure.** `sw.expenses.delete`, `sw.expenses.restore`, `sw.groups.delete`, `sw.groups.restore`, and `sw.groups.removeUser` and `sw.friends.delete` now return `Promise<void>`; `sw.groups.addUser` returns the added `User`. A `SplitwiseConstraintError` is thrown if the API rejects the operation (e.g. unsettled debts when deleting a friend).
+
+- **`expenses.list({ friendshipId })` is now `expenses.list({ friendId })`.** v1's `friendship_id` was a typo — the actual API parameter is `friend_id`, so filter-by-friend has been silently broken since v1.
 
 - **TypeScript types throughout.** Every request and response is fully typed. You no longer need a separate `@types/splitwise` package.
 

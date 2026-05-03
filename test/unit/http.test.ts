@@ -662,25 +662,34 @@ describe('HttpClient', () => {
     });
 
     it('attempt increments across retries', async () => {
-      const onRequest = vi.fn();
-      const responses = [
-        jsonResponse(503, {}),
-        jsonResponse(503, {}),
-        jsonResponse(200, {}),
-      ];
-      const fetchMock = vi.fn(async () => responses.shift()!);
-      const client = new HttpClient({
-        baseUrl: BASE_URL,
-        getAccessToken: async () => 't',
-        fetch: fetchMock as unknown as typeof fetch,
-        hooks: { onRequest },
-        maxRetries: 2,
-      });
+      vi.useFakeTimers();
+      try {
+        const onRequest = vi.fn();
+        const responses = [
+          jsonResponse(503, {}),
+          jsonResponse(503, {}),
+          jsonResponse(200, {}),
+        ];
+        const fetchMock = vi.fn(async () => responses.shift()!);
+        const client = new HttpClient({
+          baseUrl: BASE_URL,
+          getAccessToken: async () => 't',
+          fetch: fetchMock as unknown as typeof fetch,
+          hooks: { onRequest },
+          maxRetries: 2,
+        });
 
-      await client.get('/test');
+        const promise = client.get('/test');
+        // Two retry sleeps to advance through (max ~5s each via the
+        // exponential backoff cap).
+        await vi.advanceTimersByTimeAsync(20_000);
+        await promise;
 
-      expect(onRequest).toHaveBeenCalledTimes(3);
-      expect(onRequest.mock.calls.map((c) => c[0].attempt)).toEqual([1, 2, 3]);
+        expect(onRequest).toHaveBeenCalledTimes(3);
+        expect(onRequest.mock.calls.map((c) => c[0].attempt)).toEqual([1, 2, 3]);
+      } finally {
+        vi.useRealTimers();
+      }
     });
 
     it('throwing hooks do not break the SDK', async () => {
