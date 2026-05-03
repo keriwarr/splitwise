@@ -16,8 +16,8 @@ export class Expenses extends BaseResource {
   list(params?: ExpenseListParams): PagedResult<Expense> {
     const { limit, offset, ...query } = params ?? {};
     return createPagedResult<Expense>(this.http, '/get_expenses', 'expenses', {
-      limit,
-      offset,
+      ...(limit !== undefined && { limit }),
+      ...(offset !== undefined && { offset }),
       query,
     });
   }
@@ -67,15 +67,18 @@ export class Expenses extends BaseResource {
 
   async createDebt(params: CreateDebtParams): Promise<Expense> {
     const { from, to, amount, description, groupId, date } = params;
+    const cost = typeof amount === 'number' ? String(amount) : amount;
     return this.create({
       payment: false,
-      cost: amount,
-      description,
+      cost,
+      description: description ?? '',
       ...(groupId !== undefined && { groupId }),
       ...(date !== undefined && { date }),
+      // v1 only set paidShare/owedShare on the relevant side. We mirror that to
+      // minimize the request payload and avoid surprising server-side validation.
       users: [
-        { userId: from, paidShare: amount, owedShare: '0' },
-        { userId: to, paidShare: '0', owedShare: amount },
+        { userId: from, paidShare: cost },
+        { userId: to, owedShare: cost },
       ],
     });
   }

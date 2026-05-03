@@ -4,22 +4,27 @@
  * Splitwise uses a simple `limit`/`offset` scheme with no continuation tokens,
  * so a "page" is exhausted when the server returns fewer rows than requested
  * (or none at all). `PagedResult` wraps that loop in a value that is:
- *   - awaitable: `await result` resolves to the first page's array
+ *   - awaitable: `await result` resolves to the first page's array (sends the
+ *     user's `limit` as-is so the server's default applies when omitted)
  *   - async-iterable: `for await (const item of result)` yields every item
  *   - page-iterable: `for await (const page of result.byPage())` yields arrays
  *
+ * Iteration needs a known page size to detect end-of-data, so when iterating
+ * without an explicit `limit` the SDK uses `ITERATION_PAGE_SIZE` for batching.
+ *
  * The first page fetched via `await` is cached, so repeated awaits don't
  * re-hit the network. Iteration always starts a fresh sequence from the
- * configured offset to keep the iterator implementation independent.
+ * configured offset.
  */
 
 import type { HttpClient } from './http.js';
 
-const DEFAULT_LIMIT = 20;
+const ITERATION_PAGE_SIZE = 100;
 const DEFAULT_OFFSET = 0;
 
 export interface PagedResultOptions {
-  /** Page size; default 20. */
+  /** Page size. If omitted, the server's default applies for `await result`,
+   *  and `ITERATION_PAGE_SIZE` (100) applies for iteration. */
   limit?: number;
   /** Starting offset; default 0. */
   offset?: number;
@@ -44,31 +49,36 @@ export function createPagedResult<T>(
   unwrapKey: string,
   options?: PagedResultOptions,
 ): PagedResult<T> {
-  const limit = options?.limit ?? DEFAULT_LIMIT;
+  const userLimit = options?.limit;
   const startOffset = options?.offset ?? DEFAULT_OFFSET;
   const extraQuery = options?.query ?? {};
 
-  const fetchPage = (offset: number): Promise<T[]> =>
+  const fetchPage = (offset: number, limit: number | undefined): Promise<T[]> =>
     http.get<T[]>(path, {
-      query: { ...extraQuery, limit, offset },
+      query: {
+        ...extraQuery,
+        ...(limit !== undefined && { limit }),
+        offset,
+      },
       unwrapKey,
     });
 
   // Cache the first page so repeated `await result` calls don't re-fetch.
+  // The await path sends the user's limit as-is (no client-side default).
   let firstPagePromise: Promise<T[]> | null = null;
   const getFirstPage = (): Promise<T[]> => {
     if (firstPagePromise === null) {
-      firstPagePromise = fetchPage(startOffset);
+      firstPagePromise = fetchPage(startOffset, userLimit);
     }
     return firstPagePromise;
   };
 
   async function* pageIterator(): AsyncGenerator<T[], void, void> {
-    // Iteration is always independent of any cached first-page await: each
-    // iteration sequence fetches its own pages starting from `startOffset`.
+    // Iteration needs a known page size to detect end-of-data.
+    const pageSize = userLimit ?? ITERATION_PAGE_SIZE;
     let offset = startOffset;
     while (true) {
-      const page = await fetchPage(offset);
+      const page = await fetchPage(offset, pageSize);
 
       if (page.length > 0) {
         yield page;
@@ -76,8 +86,8 @@ export function createPagedResult<T>(
 
       // Stop when the server returns a short or empty page; in either case
       // there's nothing more to fetch.
-      if (page.length < limit) return;
-      offset += limit;
+      if (page.length < pageSize) return;
+      offset += pageSize;
     }
   }
 

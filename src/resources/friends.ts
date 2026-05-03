@@ -1,3 +1,4 @@
+import { SplitwiseError } from '../errors.js';
 import type {
   Friend,
   FriendCreateMultipleParams,
@@ -19,16 +20,20 @@ export class Friends extends BaseResource {
   }
 
   async create(params: FriendCreateParams): Promise<Friend> {
-    return this.http.post<Friend>('/create_friend', {
+    // The API returns { friends: [theNewFriend] } even for single creates.
+    const friends = await this.http.post<Friend[]>('/create_friend', {
       body: { ...params },
-      unwrapKey: 'user',
+      unwrapKey: 'friends',
     });
+    const first = friends[0];
+    if (!first) throw new SplitwiseError('Splitwise returned no friend');
+    return first;
   }
 
   async createMultiple(params: FriendCreateMultipleParams): Promise<Friend[]> {
     return this.http.post<Friend[]>('/create_friends', {
       body: { ...params },
-      unwrapKey: 'users',
+      unwrapKey: 'friends',
     });
   }
 

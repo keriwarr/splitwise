@@ -35,13 +35,13 @@ describe('Expenses', () => {
       });
     });
 
-    it('handles no params', async () => {
+    it('handles no params (no client-side limit default)', async () => {
       const { client, get } = makeMockHttp();
       get.mockResolvedValue([]);
       const expenses = new Expenses(client);
       await expenses.list();
       expect(get).toHaveBeenCalledWith('/get_expenses', {
-        query: { limit: 20, offset: 0 },
+        query: { offset: 0 },
         unwrapKey: 'expenses',
       });
     });
@@ -160,8 +160,8 @@ describe('Expenses', () => {
           groupId: 99,
           date: '2026-05-02',
           users: [
-            { userId: 1, paidShare: '50.00', owedShare: '0' },
-            { userId: 2, paidShare: '0', owedShare: '50.00' },
+            { userId: 1, paidShare: '50.00' },
+            { userId: 2, owedShare: '50.00' },
           ],
         },
         unwrapKey: 'expenses',
@@ -176,16 +176,39 @@ describe('Expenses', () => {
         from: 1,
         to: 2,
         amount: '5.00',
-        description: 'Coffee',
       });
       expect(post).toHaveBeenCalledWith('/create_expense', {
         body: {
           payment: false,
           cost: '5.00',
-          description: 'Coffee',
+          description: '',
           users: [
-            { userId: 1, paidShare: '5.00', owedShare: '0' },
-            { userId: 2, paidShare: '0', owedShare: '5.00' },
+            { userId: 1, paidShare: '5.00' },
+            { userId: 2, owedShare: '5.00' },
+          ],
+        },
+        unwrapKey: 'expenses',
+      });
+    });
+
+    it('accepts amount as a number and stringifies it', async () => {
+      const { client, post } = makeMockHttp();
+      post.mockResolvedValue([{ id: 1 }]);
+      const expenses = new Expenses(client);
+      await expenses.createDebt({
+        from: 1,
+        to: 2,
+        amount: 12.5,
+        description: 'Snack',
+      });
+      expect(post).toHaveBeenCalledWith('/create_expense', {
+        body: {
+          payment: false,
+          cost: '12.5',
+          description: 'Snack',
+          users: [
+            { userId: 1, paidShare: '12.5' },
+            { userId: 2, owedShare: '12.5' },
           ],
         },
         unwrapKey: 'expenses',

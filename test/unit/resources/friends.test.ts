@@ -45,10 +45,10 @@ describe('Friends', () => {
   });
 
   describe('create', () => {
-    it('POSTs to /create_friend with body and uses "user" unwrapKey', async () => {
+    it('POSTs to /create_friend, unwraps "friends", and returns the first', async () => {
       const { client, post } = makeMockHttp();
       const friend = { id: 9 };
-      post.mockResolvedValue(friend);
+      post.mockResolvedValue([friend]);
       const result = await new Friends(client).create({
         userEmail: 'a@b.com',
         userFirstName: 'Alice',
@@ -60,14 +60,32 @@ describe('Friends', () => {
           userFirstName: 'Alice',
           userLastName: 'B',
         },
-        unwrapKey: 'user',
+        unwrapKey: 'friends',
       });
       expect(result).toBe(friend);
+    });
+
+    it('accepts userEmail alone (first/last name optional)', async () => {
+      const { client, post } = makeMockHttp();
+      post.mockResolvedValue([{ id: 1 }]);
+      await new Friends(client).create({ userEmail: 'a@b.com' });
+      expect(post).toHaveBeenCalledWith('/create_friend', {
+        body: { userEmail: 'a@b.com' },
+        unwrapKey: 'friends',
+      });
+    });
+
+    it('throws if Splitwise returns no friend', async () => {
+      const { client, post } = makeMockHttp();
+      post.mockResolvedValue([]);
+      await expect(
+        new Friends(client).create({ userEmail: 'a@b.com' }),
+      ).rejects.toThrow(/no friend/);
     });
   });
 
   describe('createMultiple', () => {
-    it('POSTs to /create_friends with body and uses "users" unwrapKey', async () => {
+    it('POSTs to /create_friends with body and uses "friends" unwrapKey', async () => {
       const { client, post } = makeMockHttp();
       const friends = [{ id: 1 }, { id: 2 }];
       post.mockResolvedValue(friends);
@@ -78,7 +96,7 @@ describe('Friends', () => {
         body: {
           friends: [{ email: 'a@b.com', firstName: 'A', lastName: 'B' }],
         },
-        unwrapKey: 'users',
+        unwrapKey: 'friends',
       });
       expect(result).toBe(friends);
     });

@@ -212,7 +212,7 @@ describe('createPagedResult', () => {
     expect(collected).toEqual([{ id: 1 }, { id: 2 }, { id: 3 }]);
   });
 
-  it('uses default limit of 20 and offset of 0 when not specified', async () => {
+  it('await without limit sends no limit (server default applies)', async () => {
     const { client, get } = makeMockHttp([[{ id: 1 }]]);
     const result = createPagedResult<{ id: number }>(
       client,
@@ -221,7 +221,23 @@ describe('createPagedResult', () => {
     );
     await result;
     expect(get).toHaveBeenCalledWith('/expenses', {
-      query: { limit: 20, offset: 0 },
+      query: { offset: 0 },
+      unwrapKey: 'expenses',
+    });
+  });
+
+  it('iteration without limit uses ITERATION_PAGE_SIZE (100)', async () => {
+    const { client, get } = makeMockHttp([[]]);
+    const result = createPagedResult<{ id: number }>(
+      client,
+      '/expenses',
+      'expenses',
+    );
+    // First await sends no limit, but iteration should send limit=100
+    const iter = result[Symbol.asyncIterator]();
+    await iter.next();
+    expect(get).toHaveBeenCalledWith('/expenses', {
+      query: { limit: 100, offset: 0 },
       unwrapKey: 'expenses',
     });
   });

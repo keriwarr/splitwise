@@ -98,17 +98,20 @@ export class Splitwise {
   readonly categories: Categories;
 
   private readonly http: HttpClient;
+  private readonly config: SplitwiseConfig;
+  private readonly fetchImpl: typeof fetch | undefined;
   private cachedToken: OAuthToken | null = null;
 
   constructor(config: SplitwiseConfig) {
     validateConfig(config);
 
-    const fetchImpl = config.fetch;
+    this.config = config;
+    this.fetchImpl = config.fetch;
 
     this.http = new HttpClient({
       baseUrl: config.baseUrl ?? DEFAULT_BASE_URL,
-      getAccessToken: () => this.getAccessToken(config, fetchImpl),
-      ...(fetchImpl !== undefined && { fetch: fetchImpl }),
+      getAccessToken: () => this.getAccessToken(),
+      ...(this.fetchImpl !== undefined && { fetch: this.fetchImpl }),
       ...(config.timeout !== undefined && { timeout: config.timeout }),
       ...(config.maxRetries !== undefined && { maxRetries: config.maxRetries }),
       ...(config.logger !== undefined && { logger: config.logger }),
@@ -129,13 +132,14 @@ export class Splitwise {
   // Top-level utility methods (not natural fits for any resource)
   // ---------------------------------------------------------------------------
 
-  /** Smoke-test the API. Returns true on success. */
-  async test(): Promise<boolean> {
+  /** Smoke-test the API. Returns `{ success: true }` on success. */
+  async test(): Promise<{ success: boolean }> {
     const result = await this.http.get<{ success?: boolean } | boolean>(
       '/test',
     );
-    if (typeof result === 'boolean') return result;
-    return result.success ?? true;
+    const success =
+      typeof result === 'boolean' ? result : (result.success ?? true);
+    return { success };
   }
 
   /** Parse a natural-language expense description (e.g. "I owe Bob $10"). */
@@ -154,12 +158,14 @@ export class Splitwise {
   // Token management
   // ---------------------------------------------------------------------------
 
-  private async getAccessToken(
-    config: SplitwiseConfig,
-    fetchImpl: typeof fetch | undefined,
-  ): Promise<string> {
-    if (config.accessToken !== undefined) {
-      return config.accessToken;
+  /**
+   * Returns a valid access token, fetching one via Client Credentials if
+   * necessary. Useful for callers who want to obtain a token once and persist
+   * it across process restarts (then pass it back as `accessToken`).
+   */
+  async getAccessToken(): Promise<string> {
+    if (this.config.accessToken !== undefined) {
+      return this.config.accessToken;
     }
 
     if (this.cachedToken !== null && !isTokenExpired(this.cachedToken)) {
@@ -170,10 +176,10 @@ export class Splitwise {
     // when accessToken is absent.
     const token = await fetchClientCredentialsToken(
       {
-        clientId: config.consumerKey as string,
-        clientSecret: config.consumerSecret as string,
+        clientId: this.config.consumerKey as string,
+        clientSecret: this.config.consumerSecret as string,
       },
-      fetchImpl !== undefined ? { fetch: fetchImpl } : undefined,
+      this.fetchImpl !== undefined ? { fetch: this.fetchImpl } : undefined,
     );
 
     this.cachedToken = token;
@@ -218,12 +224,27 @@ export class Splitwise {
   }
 }
 
+// v1 supported these as constructor defaults; v2 dropped them. Surface a
+// helpful error rather than the generic "unknown option" message.
+const V1_DROPPED_KEYS = new Set([
+  'group_id',
+  'user_id',
+  'expense_id',
+  'friend_id',
+]);
+
 function validateConfig(config: SplitwiseConfig): void {
   if (config === null || typeof config !== 'object') {
     throw new TypeError('Splitwise config must be an object');
   }
 
   for (const key of Object.keys(config)) {
+    if (V1_DROPPED_KEYS.has(key)) {
+      throw new TypeError(
+        `Splitwise v2 no longer supports the "${key}" default-ID config option from v1. ` +
+          `Pass IDs explicitly to each method instead (e.g. sw.expenses.list({ groupId: 123 })).`,
+      );
+    }
     if (!ALLOWED_CONFIG_KEYS.has(key as keyof SplitwiseConfig)) {
       throw new TypeError(`Unknown Splitwise config option: "${key}"`);
     }

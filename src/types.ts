@@ -17,18 +17,8 @@ export interface Logger {
   error(msg: string): void;
 }
 
-export interface SplitwiseConfig {
-  consumerKey?: string;
-  consumerSecret?: string;
-  accessToken?: string;
-  baseUrl?: string;
-  maxRetries?: number;
-  timeout?: number;
-  logger?: Logger;
-  logLevel?: LogLevel;
-  /** Allow injecting a custom fetch implementation (useful for testing) */
-  fetch?: (input: string, init?: Record<string, unknown>) => Promise<unknown>;
-}
+// `SplitwiseConfig` is defined in `client.ts` so the canonical type lives next
+// to the constructor that consumes it.
 
 // ===== Shared / Helper Types ================================================
 
@@ -98,6 +88,8 @@ export interface ExpenseCreateParams {
   users?: UserShare[];
   splitEqually?: boolean;
   payment?: boolean;
+  /** Tag for how the expense was created (e.g. "equal"). */
+  creationMethod?: string;
 }
 
 export interface ExpenseUpdateParams {
@@ -114,6 +106,7 @@ export interface ExpenseUpdateParams {
   users?: UserShare[];
   splitEqually?: boolean;
   payment?: boolean;
+  expenseBundleId?: number;
 }
 
 export interface ExpenseDeleteParams {
@@ -127,8 +120,8 @@ export interface ExpenseRestoreParams {
 export interface CreateDebtParams {
   from: number;
   to: number;
-  amount: string;
-  description: string;
+  amount: string | number;
+  description?: string;
   groupId?: number;
   date?: string;
 }
@@ -202,15 +195,15 @@ export interface FriendGetParams {
 
 export interface FriendCreateParams {
   userEmail: string;
-  userFirstName: string;
-  userLastName: string;
+  userFirstName?: string;
+  userLastName?: string;
 }
 
 export interface FriendCreateMultipleParams {
   friends: Array<{
     email: string;
-    firstName: string;
-    lastName: string;
+    firstName?: string;
+    lastName?: string;
   }>;
 }
 
@@ -246,6 +239,8 @@ export interface ParseSentenceParams {
   input: string;
   groupId?: number;
   friendId?: number;
+  /** If true, the parsed expense is auto-saved by Splitwise. */
+  autosave?: boolean;
 }
 
 export interface GetMainDataParams {

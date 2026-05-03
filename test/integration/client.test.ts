@@ -40,6 +40,17 @@ describe('Splitwise client', () => {
       expect(() => new Splitwise({ consumerKey: 'k' })).toThrow();
       expect(() => new Splitwise({ consumerSecret: 's' })).toThrow();
     });
+
+    it('gives a helpful error for v1 default-ID config keys', () => {
+      expect(
+        () =>
+          new Splitwise({
+            accessToken: 't',
+            // @ts-expect-error - testing v1 compatibility error
+            group_id: 123,
+          }),
+      ).toThrow(/group_id.*default-ID/);
+    });
   });
 
   describe('resources', () => {
@@ -136,6 +147,23 @@ describe('Splitwise client', () => {
       expect(apiHeaders['Authorization']).toBe('Bearer fetched-token');
     });
 
+    it('exposes getAccessToken() returning the in-use token', async () => {
+      const sw = new Splitwise({ accessToken: 'plain-token' });
+      await expect(sw.getAccessToken()).resolves.toBe('plain-token');
+    });
+
+    it('getAccessToken() fetches via Client Credentials when no accessToken', async () => {
+      const fetchImpl = vi.fn(async () =>
+        jsonResponse({ access_token: 'fetched-via-creds', token_type: 'bearer' }),
+      );
+      const sw = new Splitwise({
+        consumerKey: 'k',
+        consumerSecret: 's',
+        fetch: fetchImpl as unknown as typeof fetch,
+      });
+      await expect(sw.getAccessToken()).resolves.toBe('fetched-via-creds');
+    });
+
     it('caches the OAuth token across requests', async () => {
       const fetchImpl = vi.fn(async (url: string) => {
         if (url.includes('/oauth/token')) {
@@ -174,11 +202,11 @@ describe('Splitwise client', () => {
   });
 
   describe('top-level utility methods', () => {
-    it('test() returns true on success', async () => {
+    it('test() returns { success: true } on success', async () => {
       const fetchImpl = vi.fn(async () => jsonResponse({ success: true }));
       const sw = new Splitwise({ accessToken: 't', fetch: fetchImpl });
       const result = await sw.test();
-      expect(result).toBe(true);
+      expect(result).toEqual({ success: true });
     });
 
     it('parseSentence posts to /parse_sentence', async () => {
