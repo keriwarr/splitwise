@@ -35,7 +35,7 @@ import type {
   ExchangeCodeParams,
   OAuthToken,
 } from './auth/types.js';
-import { HttpClient, type RequestOverrides } from './http.js';
+import { HttpClient, type Hooks, type RequestOverrides } from './http.js';
 import { Categories } from './resources/categories.js';
 import { Comments } from './resources/comments.js';
 import { Currencies } from './resources/currencies.js';
@@ -74,6 +74,11 @@ export interface SplitwiseConfig {
   logLevel?: LogLevel;
   /** Inject a custom fetch (useful for testing). */
   fetch?: typeof fetch;
+  /**
+   * Lifecycle hooks for observability (request/response/error). Hooks are
+   * called synchronously per attempt; thrown errors are caught and logged.
+   */
+  hooks?: Hooks;
 }
 
 const ALLOWED_CONFIG_KEYS: ReadonlySet<keyof SplitwiseConfig> = new Set([
@@ -86,6 +91,7 @@ const ALLOWED_CONFIG_KEYS: ReadonlySet<keyof SplitwiseConfig> = new Set([
   'logger',
   'logLevel',
   'fetch',
+  'hooks',
 ]);
 
 export class Splitwise {
@@ -117,6 +123,7 @@ export class Splitwise {
       ...(config.maxRetries !== undefined && { maxRetries: config.maxRetries }),
       ...(config.logger !== undefined && { logger: config.logger }),
       ...(config.logLevel !== undefined && { logLevel: config.logLevel }),
+      ...(config.hooks !== undefined && { hooks: config.hooks }),
     });
 
     this.expenses = new Expenses(this.http);

@@ -504,4 +504,136 @@ describe('HttpClient', () => {
       expect(fetchMock.mock.calls[0]![0]).toBe('https://other.example.com/test');
     });
   });
+
+  describe('hooks', () => {
+    it('fires onRequest with redacted Authorization header', async () => {
+      const onRequest = vi.fn();
+      const fetchMock = vi.fn(async () => jsonResponse(200, {}));
+      const client = new HttpClient({
+        baseUrl: BASE_URL,
+        getAccessToken: async () => 'secret-token',
+        fetch: fetchMock as unknown as typeof fetch,
+        hooks: { onRequest },
+      });
+
+      await client.get('/test');
+
+      expect(onRequest).toHaveBeenCalledOnce();
+      const event = onRequest.mock.calls[0]![0];
+      expect(event.method).toBe('GET');
+      expect(event.url).toContain('/test');
+      expect(event.attempt).toBe(1);
+      // The real token must NOT be present in the event headers.
+      expect(event.headers['Authorization']).toBe('Bearer [REDACTED]');
+      expect(event.headers['Authorization']).not.toContain('secret-token');
+    });
+
+    it('fires onResponse with status, headers, and durationMs', async () => {
+      const onResponse = vi.fn();
+      const { client } = makeClient(async () =>
+        jsonResponse(200, {}, {
+          headers: { 'x-ratelimit-remaining': '99' },
+        }),
+      );
+      const wired = new HttpClient({
+        baseUrl: BASE_URL,
+        getAccessToken: async () => 't',
+        fetch: vi.fn(async () =>
+          jsonResponse(200, {}, {
+            headers: { 'x-ratelimit-remaining': '99' },
+          }),
+        ) as unknown as typeof fetch,
+        hooks: { onResponse },
+      });
+
+      await wired.get('/test');
+
+      expect(onResponse).toHaveBeenCalledOnce();
+      const event = onResponse.mock.calls[0]![0];
+      expect(event.status).toBe(200);
+      expect(event.headers['x-ratelimit-remaining']).toBe('99');
+      expect(typeof event.durationMs).toBe('number');
+      expect(event.durationMs).toBeGreaterThanOrEqual(0);
+      // Suppress unused-var warning.
+      void client;
+    });
+
+    it('fires onError on transport failure', async () => {
+      const onError = vi.fn();
+      const fetchMock = vi.fn(async () => {
+        throw new TypeError('fetch failed');
+      });
+      const client = new HttpClient({
+        baseUrl: BASE_URL,
+        getAccessToken: async () => 't',
+        fetch: fetchMock as unknown as typeof fetch,
+        hooks: { onError },
+        maxRetries: 0,
+      });
+
+      await client.get('/test').catch(() => {});
+
+      expect(onError).toHaveBeenCalledOnce();
+      const event = onError.mock.calls[0]![0];
+      expect(event.error).toBeInstanceOf(SplitwiseConnectionError);
+      expect(event.attempt).toBe(1);
+    });
+
+    it('fires onError on API error (after onResponse)', async () => {
+      const onResponse = vi.fn();
+      const onError = vi.fn();
+      const fetchMock = vi.fn(async () => jsonResponse(404, { error: 'nope' }));
+      const client = new HttpClient({
+        baseUrl: BASE_URL,
+        getAccessToken: async () => 't',
+        fetch: fetchMock as unknown as typeof fetch,
+        hooks: { onResponse, onError },
+      });
+
+      await client.get('/test').catch(() => {});
+
+      expect(onResponse).toHaveBeenCalledOnce();
+      expect(onError).toHaveBeenCalledOnce();
+      expect(onError.mock.calls[0]![0].error).toBeInstanceOf(SplitwiseNotFoundError);
+    });
+
+    it('attempt increments across retries', async () => {
+      const onRequest = vi.fn();
+      const responses = [
+        jsonResponse(503, {}),
+        jsonResponse(503, {}),
+        jsonResponse(200, {}),
+      ];
+      const fetchMock = vi.fn(async () => responses.shift()!);
+      const client = new HttpClient({
+        baseUrl: BASE_URL,
+        getAccessToken: async () => 't',
+        fetch: fetchMock as unknown as typeof fetch,
+        hooks: { onRequest },
+        maxRetries: 2,
+      });
+
+      await client.get('/test');
+
+      expect(onRequest).toHaveBeenCalledTimes(3);
+      expect(onRequest.mock.calls.map((c) => c[0].attempt)).toEqual([1, 2, 3]);
+    });
+
+    it('throwing hooks do not break the SDK', async () => {
+      const fetchMock = vi.fn(async () => jsonResponse(200, { ok: true }));
+      const client = new HttpClient({
+        baseUrl: BASE_URL,
+        getAccessToken: async () => 't',
+        fetch: fetchMock as unknown as typeof fetch,
+        hooks: {
+          onRequest: () => {
+            throw new Error('hook explosion');
+          },
+        },
+      });
+
+      // The hook throws, but the request should still succeed.
+      await expect(client.get('/test')).resolves.toEqual({ ok: true });
+    });
+  });
 });

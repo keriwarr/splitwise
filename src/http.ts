@@ -35,6 +35,61 @@ export interface HttpClientConfig {
   logger?: Logger;
   /** Default 'none'. */
   logLevel?: LogLevel;
+  /** Optional User-Agent string. */
+  userAgent?: string;
+  /** Lifecycle hooks; see `Hooks` interface for the contract. */
+  hooks?: Hooks;
+}
+
+/**
+ * Lifecycle hooks for observability and side-effects. Inspired by Stripe's
+ * event emitter (`stripe.on('request', cb)`), but expressed as a plain
+ * options bag so consumers don't need to import an event-emitter API.
+ *
+ * Hooks are called synchronously (not awaited). Returning a Promise has no
+ * effect on the request flow -- if a hook needs to do async work, it should
+ * fire-and-forget, and any thrown error is caught and ignored so that hook
+ * misbehavior doesn't break SDK calls.
+ */
+export interface Hooks {
+  /** Called before each HTTP request leaves the client. */
+  onRequest?: (event: RequestEvent) => void;
+  /** Called for each successful response (any 2xx, even with embedded errors). */
+  onResponse?: (event: ResponseEvent) => void;
+  /**
+   * Called for every error that the SDK is about to throw. Includes both
+   * transport failures (connection, timeout, abort) and API errors. Fires
+   * once per attempt, so retried requests fire the hook multiple times.
+   */
+  onError?: (event: ErrorEvent) => void;
+}
+
+export interface RequestEvent {
+  method: string;
+  url: string;
+  /** The Authorization header is replaced with "Bearer [REDACTED]" for safety. */
+  headers: Record<string, string>;
+  /** 1-indexed; >1 indicates a retry. */
+  attempt: number;
+}
+
+export interface ResponseEvent {
+  method: string;
+  url: string;
+  status: number;
+  /** Response headers (lowercased keys). */
+  headers: Record<string, string>;
+  /** Wall-clock ms from request dispatch to response received. */
+  durationMs: number;
+  attempt: number;
+}
+
+export interface ErrorEvent {
+  method: string;
+  url: string;
+  error: unknown;
+  durationMs: number;
+  attempt: number;
 }
 
 /**
@@ -179,6 +234,24 @@ function snakeCaseKey(key: string): string {
   return key.replace(/[A-Z]/g, (c) => `_${c.toLowerCase()}`);
 }
 
+/** Replace the Authorization header's value with a placeholder for safe logging. */
+function redactAuthHeader(headers: Record<string, string>): Record<string, string> {
+  const out: Record<string, string> = { ...headers };
+  if ('Authorization' in out) {
+    out['Authorization'] = 'Bearer [REDACTED]';
+  }
+  return out;
+}
+
+/** Convert a Headers instance to a plain object with lowercased keys. */
+function headersToObject(headers: Headers): Record<string, string> {
+  const out: Record<string, string> = {};
+  headers.forEach((value, key) => {
+    out[key.toLowerCase()] = value;
+  });
+  return out;
+}
+
 /**
  * Splitwise occasionally returns 200 with an `errors` field. This helper
  * extracts a human-readable message and detects whether there are errors at all.
@@ -234,6 +307,8 @@ export class HttpClient {
   private readonly timeout: number;
   private readonly maxRetries: number;
   private readonly logger: InternalLogger;
+  private readonly userAgent: string | undefined;
+  private readonly hooks: Hooks;
 
   constructor(config: HttpClientConfig) {
     this.baseUrl = config.baseUrl;
@@ -244,6 +319,8 @@ export class HttpClient {
     this.timeout = config.timeout ?? DEFAULT_TIMEOUT_MS;
     this.maxRetries = config.maxRetries ?? DEFAULT_MAX_RETRIES;
     this.logger = createInternalLogger(config.logger, config.logLevel ?? 'none');
+    this.userAgent = config.userAgent;
+    this.hooks = config.hooks ?? {};
   }
 
   get<T>(
@@ -281,8 +358,12 @@ export class HttpClient {
       if (callerSignal?.aborted === true) return false;
       return defaultShouldRetry(ctx);
     };
+    let attempt = 0;
     return withRetry(
-      () => this.requestOnce<T>(method, path, options),
+      () => {
+        attempt += 1;
+        return this.requestOnce<T>(method, path, options, attempt);
+      },
       { maxRetries },
       shouldRetry,
     ).catch((error: unknown) => {
@@ -297,6 +378,7 @@ export class HttpClient {
     method: string,
     path: string,
     options: RequestOptions,
+    attempt: number,
   ): Promise<T> {
     const baseUrl = options.baseUrl ?? this.baseUrl;
     const timeout = options.timeout ?? this.timeout;
@@ -309,6 +391,9 @@ export class HttpClient {
       Authorization: `Bearer ${token}`,
       Accept: 'application/json',
     };
+    if (this.userAgent !== undefined) {
+      headers['User-Agent'] = this.userAgent;
+    }
 
     let body: string | FormData | undefined;
     if (options.body !== undefined && method !== 'GET') {
@@ -333,6 +418,12 @@ export class HttpClient {
     }
 
     this.logger.debug(`${method} ${url}`);
+    this.fireHook('onRequest', () => ({
+      method,
+      url,
+      headers: redactAuthHeader(headers),
+      attempt,
+    }));
 
     // Combine the timeout-driven AbortController with any caller-supplied
     // signal. We can't use AbortSignal.any() because it's Node 20+; instead,
@@ -358,6 +449,7 @@ export class HttpClient {
       }
     }
 
+    const startedAt = Date.now();
     let response: Response;
     try {
       response = await this.fetchImpl(url, {
@@ -368,29 +460,80 @@ export class HttpClient {
       });
     } catch (error) {
       const err = error as Error;
+      let wrapped: SplitwiseConnectionError;
       // AbortError fires both on timeout and on caller-initiated abort. We
       // distinguish them by checking which side actually pulled the trigger.
       if (err.name === 'AbortError') {
-        if (callerSignal?.aborted === true) {
-          throw new SplitwiseConnectionError('Request aborted by caller', err);
-        }
-        throw new SplitwiseConnectionError(
-          `Request timed out after ${timeout}ms`,
+        wrapped =
+          callerSignal?.aborted === true
+            ? new SplitwiseConnectionError('Request aborted by caller', err)
+            : new SplitwiseConnectionError(
+                `Request timed out after ${timeout}ms`,
+                err,
+              );
+      } else {
+        wrapped = new SplitwiseConnectionError(
+          err.message || 'Network request failed',
           err,
         );
       }
-      throw new SplitwiseConnectionError(
-        err.message || 'Network request failed',
-        err,
-      );
+      this.fireHook('onError', () => ({
+        method,
+        url,
+        error: wrapped,
+        durationMs: Date.now() - startedAt,
+        attempt,
+      }));
+      throw wrapped;
     } finally {
       clearTimeout(timeoutHandle);
       abortListenerCleanup?.();
     }
 
+    const durationMs = Date.now() - startedAt;
     this.logger.debug(`${method} ${url} -> ${response.status}`);
+    this.fireHook('onResponse', () => ({
+      method,
+      url,
+      status: response.status,
+      headers: headersToObject(response.headers),
+      durationMs,
+      attempt,
+    }));
 
-    return this.handleResponse<T>(response, options.unwrapKey);
+    try {
+      return await this.handleResponse<T>(response, options.unwrapKey);
+    } catch (error) {
+      this.fireHook('onError', () => ({
+        method,
+        url,
+        error,
+        durationMs: Date.now() - startedAt,
+        attempt,
+      }));
+      throw error;
+    }
+  }
+
+  /**
+   * Calls a hook if registered. Wraps the event-builder in a function so we
+   * skip the work entirely when no hook is registered. Catches synchronous
+   * throws so misbehaving user code doesn't break the request.
+   */
+  private fireHook<K extends keyof Hooks>(
+    name: K,
+    buildEvent: () => Parameters<NonNullable<Hooks[K]>>[0],
+  ): void {
+    const hook = this.hooks[name];
+    if (hook === undefined) return;
+    try {
+      // Type assertion needed because TS can't narrow the union of event types.
+      (hook as (event: ReturnType<typeof buildEvent>) => void)(buildEvent());
+    } catch (err) {
+      this.logger.error(
+        `${name} hook threw: ${err instanceof Error ? err.message : String(err)}`,
+      );
+    }
   }
 
   private async handleResponse<T>(
