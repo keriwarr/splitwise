@@ -75,13 +75,13 @@ describe('computeDelayMs', () => {
     expect(computeDelayMs(1, 500, 5000, undefined, () => 1)).toBe(500);
   });
 
-  it('uses retryAfterMs when larger than computed', () => {
-    // retryAfter is in seconds, so 10 -> 10000ms, beats any normal jitter
+  it('uses retryAfterSeconds when larger than computed', () => {
+    // retryAfterSeconds=10 -> 10000ms, beats any normal jitter
     expect(computeDelayMs(1, 500, 5000, 10, () => 1)).toBe(10000);
   });
 
-  it('uses computed when larger than retryAfterMs', () => {
-    // retryAfter 0.1s -> 100ms; computed at attempt 1 with random=1 is 500
+  it('uses computed when larger than retryAfterSeconds', () => {
+    // retryAfterSeconds=0.1 -> 100ms; computed at attempt 1 with random=1 is 500
     expect(computeDelayMs(1, 500, 5000, 0.1, () => 1)).toBe(500);
   });
 });

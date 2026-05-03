@@ -26,8 +26,8 @@ export interface RetryContext {
   attempt: number;
   /** The error from the last attempt. */
   error: unknown;
-  /** Optional server-provided Retry-After (in seconds). */
-  retryAfterMs?: number;
+  /** Optional server-provided Retry-After (in seconds, per HTTP spec). */
+  retryAfterSeconds?: number;
 }
 
 export type ShouldRetry = (ctx: RetryContext) => boolean;
@@ -61,7 +61,7 @@ export function computeDelayMs(
   attempt: number,
   baseDelayMs: number,
   maxDelayMs: number,
-  retryAfterMs: number | undefined,
+  retryAfterSeconds: number | undefined,
   random: () => number = Math.random,
 ): number {
   const exponential = Math.min(
@@ -71,9 +71,8 @@ export function computeDelayMs(
   // Jitter to 50%-100% of the computed delay to avoid thundering-herd retries.
   const jittered = exponential * (0.5 + random() * 0.5);
 
-  if (retryAfterMs !== undefined) {
-    // Retry-After is in seconds per HTTP spec, so multiply by 1000 here.
-    return Math.max(retryAfterMs * 1000, jittered);
+  if (retryAfterSeconds !== undefined) {
+    return Math.max(retryAfterSeconds * 1000, jittered);
   }
 
   return jittered;
@@ -100,7 +99,7 @@ export async function withRetry<T>(
     } catch (error) {
       lastError = error;
 
-      const retryAfterMs =
+      const retryAfterSeconds =
         error instanceof SplitwiseRateLimitError
           ? error.retryAfter
           : undefined;
@@ -110,7 +109,7 @@ export async function withRetry<T>(
         throw error;
       }
 
-      const ctx: RetryContext = { attempt, error, retryAfterMs };
+      const ctx: RetryContext = { attempt, error, retryAfterSeconds };
       if (!shouldRetry(ctx)) {
         throw error;
       }
@@ -119,7 +118,7 @@ export async function withRetry<T>(
         attempt,
         baseDelayMs,
         maxDelayMs,
-        retryAfterMs,
+        retryAfterSeconds,
       );
       await sleep(delayMs);
     }

@@ -11,6 +11,7 @@ import {
   SplitwiseConstraintError,
   SplitwiseConnectionError,
   createApiError,
+  parseRetryAfter,
 } from '../../src/errors.js';
 
 describe('Error hierarchy', () => {
@@ -254,8 +255,19 @@ describe('createApiError', () => {
     expect((err as SplitwiseRateLimitError).retryAfter).toBeUndefined();
   });
 
-  it('sets retryAfter to undefined when Retry-After header is not a number', () => {
+  it('parses Retry-After in HTTP-date format', () => {
+    // The exact value depends on Date.now(), but it should be a non-negative
+    // number (the date is 2026-10-21, well in the future at any reasonable
+    // run time of this test).
     const headers = new Headers({ 'retry-after': 'Wed, 21 Oct 2026 07:28:00 GMT' });
+    const err = createApiError(429, 'rate limited', 'rate_limited', raw, headers);
+    const ra = (err as SplitwiseRateLimitError).retryAfter;
+    expect(typeof ra).toBe('number');
+    expect(ra).toBeGreaterThanOrEqual(0);
+  });
+
+  it('sets retryAfter to undefined when Retry-After is malformed', () => {
+    const headers = new Headers({ 'retry-after': 'tomorrow maybe' });
     const err = createApiError(429, 'rate limited', 'rate_limited', raw, headers);
     expect((err as SplitwiseRateLimitError).retryAfter).toBeUndefined();
   });
@@ -304,5 +316,45 @@ describe('createApiError', () => {
       expect(err).toBeInstanceOf(SplitwiseError);
       expect(err).toBeInstanceOf(Error);
     }
+  });
+});
+
+describe('parseRetryAfter', () => {
+  it('parses delta-seconds (integer)', () => {
+    expect(parseRetryAfter('120')).toBe(120);
+    expect(parseRetryAfter('0')).toBe(0);
+  });
+
+  it('parses delta-seconds (decimal)', () => {
+    expect(parseRetryAfter('1.5')).toBe(1.5);
+  });
+
+  it('trims surrounding whitespace', () => {
+    expect(parseRetryAfter('  60  ')).toBe(60);
+  });
+
+  it('parses HTTP-date format and returns delta to now', () => {
+    // 60 seconds in the future
+    const fakeNow = Date.UTC(2026, 4, 3, 12, 0, 0);
+    const targetDate = new Date(fakeNow + 60_000).toUTCString();
+    expect(parseRetryAfter(targetDate, () => fakeNow)).toBe(60);
+  });
+
+  it('returns 0 for HTTP-dates in the past', () => {
+    const fakeNow = Date.UTC(2026, 4, 3, 12, 0, 0);
+    const targetDate = new Date(fakeNow - 60_000).toUTCString();
+    expect(parseRetryAfter(targetDate, () => fakeNow)).toBe(0);
+  });
+
+  it('returns undefined for null/undefined/empty input', () => {
+    expect(parseRetryAfter(null)).toBeUndefined();
+    expect(parseRetryAfter(undefined)).toBeUndefined();
+    expect(parseRetryAfter('')).toBeUndefined();
+  });
+
+  it('returns undefined for malformed input', () => {
+    expect(parseRetryAfter('not a date or number')).toBeUndefined();
+    expect(parseRetryAfter('12abc')).toBeUndefined();
+    expect(parseRetryAfter('-5')).toBeUndefined();
   });
 });

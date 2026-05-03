@@ -68,6 +68,11 @@ export class SplitwiseValidationError extends SplitwiseApiError {
 }
 
 export class SplitwiseRateLimitError extends SplitwiseApiError {
+  /**
+   * Server-suggested wait time in seconds, parsed from the Retry-After
+   * header. Handles both delta-seconds (e.g. "120") and HTTP-date formats.
+   * Undefined when the server didn't send the header or it was malformed.
+   */
   readonly retryAfter: number | undefined;
 
   constructor(
@@ -120,6 +125,42 @@ interface HeadersLike {
 }
 
 /**
+ * Parse a Retry-After header value, returning the delay in seconds.
+ *
+ * Per RFC 7231 § 7.1.3 the value can be either:
+ *  - a non-negative integer (delta-seconds), e.g. "120"
+ *  - an HTTP-date, e.g. "Wed, 21 Oct 2026 07:28:00 GMT"
+ *
+ * Returns undefined if the value is missing, malformed, or in the past.
+ */
+export function parseRetryAfter(
+  raw: string | null | undefined,
+  now: () => number = () => Date.now(),
+): number | undefined {
+  if (raw === null || raw === undefined || raw.length === 0) return undefined;
+
+  const trimmed = raw.trim();
+
+  // Try delta-seconds first. Use a regex to reject mixed input like "12abc"
+  // that Number() would otherwise coerce to NaN-but-then-misleading.
+  if (/^\d+(?:\.\d+)?$/.test(trimmed)) {
+    const seconds = Number(trimmed);
+    return seconds >= 0 ? seconds : undefined;
+  }
+
+  // Fall back to HTTP-date. Date.parse() is too permissive (e.g. it accepts
+  // bare strings like "-5" as years), so we require the input to look like a
+  // proper HTTP-date: weekday name + comma + day + month name + ...
+  // This matches all three RFC 7231 date formats (IMF-fixdate, obsolete
+  // RFC 850, and ANSI C asctime).
+  if (!/^[A-Za-z]+(?:,|\s+\d)/.test(trimmed)) return undefined;
+  const epochMs = Date.parse(trimmed);
+  if (Number.isNaN(epochMs)) return undefined;
+  const deltaSeconds = Math.max(0, Math.ceil((epochMs - now()) / 1000));
+  return deltaSeconds;
+}
+
+/**
  * Maps an HTTP status code to the appropriate SplitwiseApiError subclass.
  */
 export function createApiError(
@@ -140,18 +181,8 @@ export function createApiError(
       return new SplitwiseNotFoundError(message, code, raw);
     case 429: {
       const retryAfterHeader = headers?.get('retry-after');
-      const retryAfter =
-        retryAfterHeader !== null && retryAfterHeader !== undefined
-          ? Number(retryAfterHeader)
-          : undefined;
-      return new SplitwiseRateLimitError(
-        message,
-        code,
-        raw,
-        retryAfter !== undefined && !Number.isNaN(retryAfter)
-          ? retryAfter
-          : undefined,
-      );
+      const retryAfter = parseRetryAfter(retryAfterHeader, () => Date.now());
+      return new SplitwiseRateLimitError(message, code, raw, retryAfter);
     }
     default:
       if (statusCode >= 500 && statusCode < 600) {

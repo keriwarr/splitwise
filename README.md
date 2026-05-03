@@ -267,7 +267,9 @@ try {
   } else if (err instanceof SplitwiseAuthenticationError) {
     // ...token is invalid or expired
   } else if (err instanceof SplitwiseRateLimitError) {
-    // `retryAfter` is the value of the Retry-After header in seconds, if present
+    // `retryAfter` is the parsed Retry-After value in seconds (handles both
+    // delta-seconds and HTTP-date formats); undefined if the server didn't
+    // send the header.
     await sleep((err.retryAfter ?? 1) * 1000);
   } else {
     throw err;
