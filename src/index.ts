@@ -32,6 +32,12 @@ export type {
   RequestOverrides,
   ResponseEvent,
 } from './http.js';
+export {
+  NotificationType,
+  notificationTypeName,
+} from './notification-types.js';
+export type { NotificationTypeId } from './notification-types.js';
+
 export type { PagedResult } from './pagination.js';
 
 export type {

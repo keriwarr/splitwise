@@ -478,6 +478,12 @@ export interface NotificationSource {
 
 export interface Notification {
   id: number;
+  /**
+   * Notification kind, returned as a small integer. See `NotificationType`
+   * for the known values, and `notificationTypeName()` for a human-readable
+   * name. Splitwise may add new values without warning, so handle unknown
+   * numbers gracefully.
+   */
   type?: number;
   createdAt: string;
   createdBy?: number;
