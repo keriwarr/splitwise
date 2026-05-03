@@ -117,8 +117,8 @@ For the underlying API surface and detailed parameter semantics, see the [offici
 | `get(params: { id }): Promise<Expense>` | Fetch a single expense. |
 | `create(params: ExpenseCreateParams): Promise<Expense>` | Create an expense. |
 | `update(params: ExpenseUpdateParams): Promise<Expense>` | Update an existing expense by `id`. |
-| `delete(params: { id }): Promise<{ success: boolean }>` | Delete an expense (soft delete). |
-| `restore(params: { id }): Promise<{ success: boolean }>` | Restore a soft-deleted expense. |
+| `delete(params: { id }): Promise<void>` | Delete an expense (soft delete). Throws `SplitwiseConstraintError` on domain failure. |
+| `restore(params: { id }): Promise<void>` | Restore a soft-deleted expense. |
 | `createDebt(params: CreateDebtParams): Promise<Expense>` | Convenience helper for the common "user A owes user B X" case. |
 
 ```typescript
@@ -147,10 +147,10 @@ await sw.expenses.createDebt({
 | `list(): Promise<Group[]>` | List the current user's groups. |
 | `get(params: { id }): Promise<Group>` | Fetch a single group. |
 | `create(params: GroupCreateParams): Promise<Group>` | Create a new group. |
-| `delete(params: { id }): Promise<{ success: boolean }>` | Delete a group. |
-| `restore(params: { id }): Promise<{ success: boolean }>` | Restore a deleted group. |
-| `addUser(params: AddUserToGroupParams): Promise<{ success: boolean }>` | Add a user to a group (by `userId` or by name + email). |
-| `removeUser(params: { groupId, userId }): Promise<{ success: boolean }>` | Remove a user from a group. |
+| `delete(params: { id }): Promise<void>` | Delete a group. Throws `SplitwiseConstraintError` on domain failure. |
+| `restore(params: { id }): Promise<void>` | Restore a deleted group. |
+| `addUser(params: AddUserToGroupParams): Promise<User>` | Add a user to a group (by `userId` or by name + email). Returns the added user. |
+| `removeUser(params: { groupId, userId }): Promise<void>` | Remove a user from a group. |
 
 ### Users — `sw.users`
 
@@ -168,7 +168,7 @@ await sw.expenses.createDebt({
 | `get(params: { id }): Promise<Friend>` | Fetch one friend. |
 | `create(params: FriendCreateParams): Promise<Friend>` | Add a friend by email. |
 | `createMultiple(params: FriendCreateMultipleParams): Promise<Friend[]>` | Add several friends at once. |
-| `delete(params: { id }): Promise<{ success: boolean }>` | Remove a friend. |
+| `delete(params: { id }): Promise<void>` | Remove a friend. Throws `SplitwiseConstraintError` if the friendship has unsettled debts. |
 
 ### Comments — `sw.comments`
 
@@ -200,8 +200,8 @@ await sw.expenses.createDebt({
 
 | Method | Description |
 |---|---|
-| `sw.test(): Promise<{ success: boolean }>` | Smoke-test the API and your credentials. |
-| `sw.parseSentence(params: ParseSentenceParams): Promise<unknown>` | Parse a natural-language description (e.g. "I owe Bob $10") into an expense. |
+| `sw.test(): Promise<{ clientId, token, requestUrl, params }>` | "Whoami" endpoint: returns the authenticated client's id and token info. |
+| `sw.parseSentence(params: ParseSentenceParams): Promise<ParseSentenceResponse>` | Parse a natural-language description (e.g. "I owe Bob $10") into an expense. |
 | `sw.getMainData(params?: GetMainDataParams): Promise<unknown>` | Bulk fetch user, groups, friends, currencies, and categories in one call. |
 | `sw.getAccessToken(): Promise<string>` | Return the current access token (fetching one via Client Credentials if needed). |
 
@@ -237,20 +237,24 @@ Every error thrown by the SDK extends `SplitwiseError`. HTTP errors are mapped t
 
 ```
 SplitwiseError
-├── SplitwiseApiError              (any non-2xx response)
+├── SplitwiseApiError              (any failure response from the API)
 │   ├── SplitwiseValidationError       (400)
 │   ├── SplitwiseAuthenticationError   (401)
 │   ├── SplitwiseForbiddenError        (403)
 │   ├── SplitwiseNotFoundError         (404)
 │   ├── SplitwiseRateLimitError        (429)
-│   └── SplitwiseServerError           (5xx)
+│   ├── SplitwiseServerError           (5xx)
+│   └── SplitwiseConstraintError       (200 with success:false / non-empty errors)
 └── SplitwiseConnectionError       (network failures)
 ```
+
+`SplitwiseConstraintError` covers cases where the API returns HTTP 200 but the operation didn't actually happen — typically because of a domain rule (e.g. trying to delete a friend with whom you have an unsettled balance). Following the Stripe pattern, the SDK throws on these rather than returning the failure as data, so `delete()`-style methods can have a clean `Promise<void>` return type and callers don't need to remember to check a `success` field.
 
 ```typescript
 import {
   Splitwise,
   SplitwiseAuthenticationError,
+  SplitwiseConstraintError,
   SplitwiseRateLimitError,
   SplitwiseNotFoundError,
 } from 'splitwise';
@@ -267,6 +271,17 @@ try {
     await sleep((err.retryAfter ?? 1) * 1000);
   } else {
     throw err;
+  }
+}
+
+// Domain failure example: trying to delete a friend with unsettled debts
+try {
+  await sw.friends.delete({ id: 12345 });
+} catch (err) {
+  if (err instanceof SplitwiseConstraintError) {
+    // err.message: "You cannot delete this friendship; you have unsettled debts"
+    // err.raw: full response body for inspection
+    showUserMessage(err.message);
   }
 }
 ```

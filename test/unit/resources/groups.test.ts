@@ -59,61 +59,54 @@ describe('Groups', () => {
   });
 
   describe('delete', () => {
-    it('POSTs to /delete_group/:id', async () => {
+    it('POSTs to /delete_group/:id and resolves to void', async () => {
       const { client, post } = makeMockHttp();
-      post.mockResolvedValue(true);
+      post.mockResolvedValue(undefined);
       const result = await new Groups(client).delete({ id: 7 });
-      expect(post).toHaveBeenCalledWith('/delete_group/7', {
-        unwrapKey: 'success',
-      });
-      expect(result).toEqual({ success: true });
+      expect(post).toHaveBeenCalledWith('/delete_group/7');
+      expect(result).toBeUndefined();
     });
   });
 
   describe('restore', () => {
-    it('POSTs to /undelete_group/:id', async () => {
+    it('POSTs to /undelete_group/:id and resolves to void', async () => {
       const { client, post } = makeMockHttp();
-      post.mockResolvedValue(true);
+      post.mockResolvedValue(undefined);
       const result = await new Groups(client).restore({ id: 8 });
-      expect(post).toHaveBeenCalledWith('/undelete_group/8', {
-        unwrapKey: 'success',
-      });
-      expect(result).toEqual({ success: true });
+      expect(post).toHaveBeenCalledWith('/undelete_group/8');
+      expect(result).toBeUndefined();
     });
   });
 
   describe('addUser', () => {
-    it('POSTs to /add_user_to_group and returns success + user', async () => {
+    it('POSTs to /add_user_to_group and returns the added user', async () => {
       const { client, post } = makeMockHttp();
-      const apiResp = {
-        success: true,
-        user: { id: 2, firstName: 'Sdk', lastName: 'Test' },
-      };
-      post.mockResolvedValue(apiResp);
+      const user = { id: 2, firstName: 'Sdk', lastName: 'Test' };
+      post.mockResolvedValue(user);
       const result = await new Groups(client).addUser({
         groupId: 1,
         userId: 2,
       });
       expect(post).toHaveBeenCalledWith('/add_user_to_group', {
         body: { groupId: 1, userId: 2 },
+        unwrapKey: 'user',
       });
-      expect(result).toBe(apiResp);
+      expect(result).toBe(user);
     });
   });
 
   describe('removeUser', () => {
-    it('POSTs to /remove_user_from_group with body', async () => {
+    it('POSTs to /remove_user_from_group and resolves to void', async () => {
       const { client, post } = makeMockHttp();
-      post.mockResolvedValue(true);
+      post.mockResolvedValue(undefined);
       const result = await new Groups(client).removeUser({
         groupId: 1,
         userId: 2,
       });
       expect(post).toHaveBeenCalledWith('/remove_user_from_group', {
         body: { groupId: 1, userId: 2 },
-        unwrapKey: 'success',
       });
-      expect(result).toEqual({ success: true });
+      expect(result).toBeUndefined();
     });
   });
 });

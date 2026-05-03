@@ -134,16 +134,14 @@ describe('fixture-driven integration', () => {
   });
 
   describe('expenses.delete / undelete', () => {
-    it('parses delete_expense as { success: true }', async () => {
+    it('delete_expense resolves to void on success', async () => {
       const sw = clientForFixture('delete-expense');
-      const result = await sw.expenses.delete({ id: 1 });
-      expect(result).toEqual({ success: true });
+      await expect(sw.expenses.delete({ id: 1 })).resolves.toBeUndefined();
     });
 
-    it('parses undelete_expense as { success: true }', async () => {
+    it('undelete_expense resolves to void on success', async () => {
       const sw = clientForFixture('undelete-expense');
-      const result = await sw.expenses.restore({ id: 1 });
-      expect(result).toEqual({ success: true });
+      await expect(sw.expenses.restore({ id: 1 })).resolves.toBeUndefined();
     });
   });
 
@@ -188,10 +186,9 @@ describe('fixture-driven integration', () => {
   });
 
   describe('friends.delete', () => {
-    it('parses delete_friend as { success: true }', async () => {
+    it('delete_friend resolves to void on success', async () => {
       const sw = clientForFixture('delete-friend');
-      const result = await sw.friends.delete({ id: 1 });
-      expect(result).toEqual({ success: true });
+      await expect(sw.friends.delete({ id: 1 })).resolves.toBeUndefined();
     });
   });
 
@@ -210,19 +207,18 @@ describe('fixture-driven integration', () => {
   });
 
   describe('groups.addUser', () => {
-    it('parses add_user_to_group with success + user', async () => {
+    it('parses add_user_to_group and returns the added user', async () => {
       const expectedUserId = fromFixture<number>(
         'add-user-to-group',
         'user.id',
       );
       const sw = clientForFixture('add-user-to-group');
-      const result = await sw.groups.addUser({
+      const user = await sw.groups.addUser({
         groupId: 1,
         userId: expectedUserId,
       });
-      expect(result.success).toBe(true);
-      expect(result.user?.id).toBe(expectedUserId);
-      expect(result.user?.firstName).toBe('Sdk');
+      expect(user.id).toBe(expectedUserId);
+      expect(user.firstName).toBe('Sdk');
     });
   });
 

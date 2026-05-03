@@ -12,6 +12,7 @@ export {
   SplitwiseValidationError,
   SplitwiseRateLimitError,
   SplitwiseServerError,
+  SplitwiseConstraintError,
   SplitwiseConnectionError,
 } from './errors.js';
 

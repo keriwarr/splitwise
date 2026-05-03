@@ -12,8 +12,8 @@
  */
 
 import {
-  SplitwiseApiError,
   SplitwiseConnectionError,
+  SplitwiseConstraintError,
   createApiError,
 } from './errors.js';
 import { flattenParams, keysToCamelCase, keysToSnakeCase } from './params.js';
@@ -374,15 +374,22 @@ export class HttpClient {
       );
     }
 
-    // Splitwise sometimes returns 200 with an embedded `errors` field.
-    const embedded = extractErrorsFromBody(parsed);
-    if (embedded !== null) {
-      throw new SplitwiseApiError(
-        response.status,
-        embedded.message,
-        embedded.code,
-        parsed,
-      );
+    // Splitwise's "destructive" endpoints (delete_*, undelete_*, addUser,
+    // removeUser) and some create/update endpoints can return 200 with
+    // success:false or a non-empty errors field when the operation can't
+    // happen for a domain reason (e.g. deleting a friend with unsettled
+    // debts). Surface these as a typed exception so callers can distinguish
+    // "domain failure" from successful results without inspecting the body.
+    if (isPlainObject(parsed)) {
+      const embedded = extractErrorsFromBody(parsed);
+      const explicitFailure = parsed['success'] === false;
+      if (embedded !== null || explicitFailure) {
+        const message =
+          embedded?.message ??
+          'Splitwise reported the operation as unsuccessful';
+        const code = embedded?.code ?? 'success_false';
+        throw new SplitwiseConstraintError(message, code, parsed);
+      }
     }
 
     const camelCased = keysToCamelCase(parsed) as Record<string, unknown> | unknown;

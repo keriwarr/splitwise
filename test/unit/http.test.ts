@@ -3,6 +3,7 @@ import {
   SplitwiseApiError,
   SplitwiseAuthenticationError,
   SplitwiseConnectionError,
+  SplitwiseConstraintError,
   SplitwiseNotFoundError,
   SplitwiseRateLimitError,
   SplitwiseServerError,
@@ -256,7 +257,7 @@ describe('HttpClient', () => {
       expect((err as SplitwiseConnectionError).cause).toBeInstanceOf(TypeError);
     });
 
-    it('throws on 200 response with errors.base field', async () => {
+    it('throws SplitwiseConstraintError on 200 with errors.base field', async () => {
       const { client } = makeClient(async () =>
         jsonResponse(200, {
           errors: { base: ['Invalid request: cost must be a number'] },
@@ -267,11 +268,14 @@ describe('HttpClient', () => {
         .post('/create_expense', { body: { cost: 'bad' } })
         .catch((e: unknown) => e);
 
+      expect(err).toBeInstanceOf(SplitwiseConstraintError);
+      // SplitwiseConstraintError extends SplitwiseApiError, so the broader
+      // instanceof check still matches.
       expect(err).toBeInstanceOf(SplitwiseApiError);
       expect((err as Error).message).toContain('cost must be a number');
     });
 
-    it('throws on 200 response with errors as string array', async () => {
+    it('throws SplitwiseConstraintError on 200 with errors as string array', async () => {
       const { client } = makeClient(async () =>
         jsonResponse(200, { errors: ['something bad happened'] }),
       );
@@ -280,8 +284,32 @@ describe('HttpClient', () => {
         .post('/create_expense', { body: {} })
         .catch((e: unknown) => e);
 
-      expect(err).toBeInstanceOf(SplitwiseApiError);
+      expect(err).toBeInstanceOf(SplitwiseConstraintError);
       expect((err as Error).message).toContain('something bad happened');
+    });
+
+    it('throws SplitwiseConstraintError on 200 with success:false (no errors field)', async () => {
+      const { client } = makeClient(async () =>
+        jsonResponse(200, { success: false }),
+      );
+
+      const err = await client
+        .post('/delete_friend/1', {})
+        .catch((e: unknown) => e);
+
+      expect(err).toBeInstanceOf(SplitwiseConstraintError);
+      expect((err as SplitwiseConstraintError).code).toBe('success_false');
+    });
+
+    it('does not throw on 200 with success:true and empty errors object', async () => {
+      const { client } = makeClient(async () =>
+        jsonResponse(200, { success: true, errors: {} }),
+      );
+
+      await expect(client.post('/delete_expense/1', {})).resolves.toEqual({
+        success: true,
+        errors: {},
+      });
     });
   });
 

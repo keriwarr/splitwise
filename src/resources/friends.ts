@@ -36,11 +36,11 @@ export class Friends extends BaseResource {
     });
   }
 
-  async delete(params: FriendDeleteParams): Promise<{ success: boolean }> {
-    const success = await this.http.post<boolean>(
-      `/delete_friend/${params.id}`,
-      { unwrapKey: 'success' },
-    );
-    return { success };
+  /**
+   * Deletes a friendship. Throws SplitwiseConstraintError if the API refuses
+   * (most commonly because the friendship has unsettled debts).
+   */
+  async delete(params: FriendDeleteParams): Promise<void> {
+    await this.http.post(`/delete_friend/${params.id}`);
   }
 }

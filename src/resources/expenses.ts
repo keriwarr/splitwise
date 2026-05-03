@@ -49,20 +49,18 @@ export class Expenses extends BaseResource {
     return first;
   }
 
-  async delete(params: ExpenseDeleteParams): Promise<{ success: boolean }> {
-    const success = await this.http.post<boolean>(
-      `/delete_expense/${params.id}`,
-      { unwrapKey: 'success' },
-    );
-    return { success };
+  /**
+   * Deletes an expense. Throws SplitwiseConstraintError if the API returns
+   * `success: false` (e.g. you don't have permission). Returns nothing on
+   * success -- the absence of an exception is the signal.
+   */
+  async delete(params: ExpenseDeleteParams): Promise<void> {
+    await this.http.post(`/delete_expense/${params.id}`);
   }
 
-  async restore(params: ExpenseRestoreParams): Promise<{ success: boolean }> {
-    const success = await this.http.post<boolean>(
-      `/undelete_expense/${params.id}`,
-      { unwrapKey: 'success' },
-    );
-    return { success };
+  /** Restores a previously-deleted expense. Throws on failure. */
+  async restore(params: ExpenseRestoreParams): Promise<void> {
+    await this.http.post(`/undelete_expense/${params.id}`);
   }
 
   async createDebt(params: CreateDebtParams): Promise<Expense> {

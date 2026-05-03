@@ -8,6 +8,7 @@ import {
   SplitwiseValidationError,
   SplitwiseRateLimitError,
   SplitwiseServerError,
+  SplitwiseConstraintError,
   SplitwiseConnectionError,
   createApiError,
 } from '../../src/errors.js';
@@ -139,6 +140,33 @@ describe('Error hierarchy', () => {
     it('is instanceof SplitwiseApiError', () => {
       const err = new SplitwiseServerError(500, 'internal', 'server_error', {});
       expect(err).toBeInstanceOf(SplitwiseApiError);
+    });
+  });
+
+  describe('SplitwiseConstraintError', () => {
+    it('has correct name', () => {
+      const err = new SplitwiseConstraintError('cannot delete', 'errors', {});
+      expect(err.name).toBe('SplitwiseConstraintError');
+    });
+
+    it('extends SplitwiseApiError and SplitwiseError', () => {
+      const err = new SplitwiseConstraintError('cannot delete', 'errors', {});
+      expect(err).toBeInstanceOf(SplitwiseApiError);
+      expect(err).toBeInstanceOf(SplitwiseError);
+      expect(err).toBeInstanceOf(Error);
+    });
+
+    it('hardcodes status to 200 (the API returned 200 with success:false)', () => {
+      const err = new SplitwiseConstraintError('cannot delete', 'errors', {});
+      expect(err.statusCode).toBe(200);
+    });
+
+    it('preserves message, code, and raw', () => {
+      const raw = { success: false, errors: { base: ['nope'] } };
+      const err = new SplitwiseConstraintError('nope', 'errors', raw);
+      expect(err.message).toBe('nope');
+      expect(err.code).toBe('errors');
+      expect(err.raw).toBe(raw);
     });
   });
 

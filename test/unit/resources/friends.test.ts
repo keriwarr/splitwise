@@ -95,14 +95,12 @@ describe('Friends', () => {
   });
 
   describe('delete', () => {
-    it('POSTs to /delete_friend/:id and wraps success', async () => {
+    it('POSTs to /delete_friend/:id and resolves to void', async () => {
       const { client, post } = makeMockHttp();
-      post.mockResolvedValue(true);
+      post.mockResolvedValue(undefined);
       const result = await new Friends(client).delete({ id: 12 });
-      expect(post).toHaveBeenCalledWith('/delete_friend/12', {
-        unwrapKey: 'success',
-      });
-      expect(result).toEqual({ success: true });
+      expect(post).toHaveBeenCalledWith('/delete_friend/12');
+      expect(result).toBeUndefined();
     });
   });
 });

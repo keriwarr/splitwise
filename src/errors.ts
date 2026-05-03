@@ -8,7 +8,8 @@
  * │   ├── SplitwiseNotFoundError        (404)
  * │   ├── SplitwiseValidationError      (400)
  * │   ├── SplitwiseRateLimitError       (429)
- * │   └── SplitwiseServerError          (5xx)
+ * │   ├── SplitwiseServerError          (5xx)
+ * │   └── SplitwiseConstraintError      (200 with success:false / non-empty errors)
  * └── SplitwiseConnectionError (network failures)
  */
 
@@ -85,6 +86,21 @@ export class SplitwiseServerError extends SplitwiseApiError {
   constructor(statusCode: number, message: string, code: string, raw: unknown) {
     super(statusCode, message, code, raw);
     this.name = 'SplitwiseServerError';
+  }
+}
+
+/**
+ * Splitwise's "destructive" endpoints (delete_*, undelete_*, add_user_to_group,
+ * remove_user_from_group) and some create/update endpoints can return HTTP 200
+ * with `success: false` or a non-empty `errors` field when the operation
+ * couldn't complete for a domain reason (e.g. trying to delete a friend with a
+ * non-zero balance). The SDK surfaces these as a typed exception following the
+ * Stripe model -- failures are always thrown, never returned as data.
+ */
+export class SplitwiseConstraintError extends SplitwiseApiError {
+  constructor(message: string, code: string, raw: unknown) {
+    super(200, message, code, raw);
+    this.name = 'SplitwiseConstraintError';
   }
 }
 

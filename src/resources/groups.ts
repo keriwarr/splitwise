@@ -29,42 +29,33 @@ export class Groups extends BaseResource {
     });
   }
 
-  async delete(params: GroupDeleteParams): Promise<{ success: boolean }> {
-    const success = await this.http.post<boolean>(
-      `/delete_group/${params.id}`,
-      { unwrapKey: 'success' },
-    );
-    return { success };
+  /** Deletes a group. Throws SplitwiseConstraintError if the API refuses. */
+  async delete(params: GroupDeleteParams): Promise<void> {
+    await this.http.post(`/delete_group/${params.id}`);
   }
 
-  async restore(params: GroupRestoreParams): Promise<{ success: boolean }> {
-    const success = await this.http.post<boolean>(
-      `/undelete_group/${params.id}`,
-      { unwrapKey: 'success' },
-    );
-    return { success };
+  /** Restores a previously-deleted group. Throws on failure. */
+  async restore(params: GroupRestoreParams): Promise<void> {
+    await this.http.post(`/undelete_group/${params.id}`);
   }
 
   /**
-   * Adds a user to a group. The API returns both `success` and the added
-   * `user` (handy when adding by email — you get back their assigned id).
+   * Adds a user to a group. Returns the added user object (useful when
+   * adding by email -- the response gives you back the assigned user_id).
+   * Throws SplitwiseConstraintError if the API refuses (e.g. unknown user).
    */
-  async addUser(
-    params: AddUserToGroupParams,
-  ): Promise<{ success: boolean; user?: User }> {
-    return this.http.post<{ success: boolean; user?: User }>(
-      '/add_user_to_group',
-      { body: { ...params } },
-    );
+  async addUser(params: AddUserToGroupParams): Promise<User> {
+    return this.http.post<User>('/add_user_to_group', {
+      body: { ...params },
+      unwrapKey: 'user',
+    });
   }
 
-  async removeUser(
-    params: RemoveUserFromGroupParams,
-  ): Promise<{ success: boolean }> {
-    const success = await this.http.post<boolean>('/remove_user_from_group', {
-      body: { ...params },
-      unwrapKey: 'success',
-    });
-    return { success };
+  /**
+   * Removes a user from a group. Throws SplitwiseConstraintError if the API
+   * refuses (e.g. the user has unsettled debts in this group).
+   */
+  async removeUser(params: RemoveUserFromGroupParams): Promise<void> {
+    await this.http.post('/remove_user_from_group', { body: { ...params } });
   }
 }

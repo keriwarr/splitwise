@@ -129,28 +129,24 @@ describe('Expenses', () => {
   });
 
   describe('delete', () => {
-    it('POSTs to /delete_expense/:id and wraps success boolean', async () => {
+    it('POSTs to /delete_expense/:id and resolves to void', async () => {
       const { client, post } = makeMockHttp();
-      post.mockResolvedValue(true);
+      post.mockResolvedValue(undefined);
       const expenses = new Expenses(client);
       const result = await expenses.delete({ id: 7 });
-      expect(post).toHaveBeenCalledWith('/delete_expense/7', {
-        unwrapKey: 'success',
-      });
-      expect(result).toEqual({ success: true });
+      expect(post).toHaveBeenCalledWith('/delete_expense/7');
+      expect(result).toBeUndefined();
     });
   });
 
   describe('restore', () => {
-    it('POSTs to /undelete_expense/:id and wraps success boolean', async () => {
+    it('POSTs to /undelete_expense/:id and resolves to void', async () => {
       const { client, post } = makeMockHttp();
-      post.mockResolvedValue(true);
+      post.mockResolvedValue(undefined);
       const expenses = new Expenses(client);
       const result = await expenses.restore({ id: 8 });
-      expect(post).toHaveBeenCalledWith('/undelete_expense/8', {
-        unwrapKey: 'success',
-      });
-      expect(result).toEqual({ success: true });
+      expect(post).toHaveBeenCalledWith('/undelete_expense/8');
+      expect(result).toBeUndefined();
     });
   });
 
