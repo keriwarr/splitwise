@@ -35,7 +35,7 @@ import type {
   ExchangeCodeParams,
   OAuthToken,
 } from './auth/types.js';
-import { HttpClient } from './http.js';
+import { HttpClient, type RequestOverrides } from './http.js';
 import { Categories } from './resources/categories.js';
 import { Comments } from './resources/comments.js';
 import { Currencies } from './resources/currencies.js';
@@ -141,28 +141,34 @@ export class Splitwise {
    * Despite the name, the endpoint is closer to a `whoami` than a generic
    * health check.
    */
-  async test(): Promise<{
+  async test(overrides?: RequestOverrides): Promise<{
     clientId: number;
     token: { accessToken: string; tokenType: string };
     requestUrl: string;
     params: Record<string, unknown>;
   }> {
-    return this.http.get('/test');
+    return this.http.get('/test', overrides);
   }
 
   /** Parse a natural-language expense description (e.g. "I owe Bob $10"). */
   async parseSentence(
     params: ParseSentenceParams,
+    overrides?: RequestOverrides,
   ): Promise<ParseSentenceResponse> {
     return this.http.post<ParseSentenceResponse>('/parse_sentence', {
       body: { ...params },
+      ...overrides,
     });
   }
 
   /** Bulk fetch of user, groups, friends, currencies, categories, etc. */
-  async getMainData(params?: GetMainDataParams): Promise<unknown> {
+  async getMainData(
+    params?: GetMainDataParams,
+    overrides?: RequestOverrides,
+  ): Promise<unknown> {
     return this.http.get<unknown>('/get_main_data', {
       ...(params !== undefined && { query: { ...params } }),
+      ...overrides,
     });
   }
 

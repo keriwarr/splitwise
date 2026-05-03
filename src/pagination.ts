@@ -17,12 +17,12 @@
  * configured offset.
  */
 
-import type { HttpClient } from './http.js';
+import type { HttpClient, RequestOverrides } from './http.js';
 
 const ITERATION_PAGE_SIZE = 100;
 const DEFAULT_OFFSET = 0;
 
-export interface PagedResultOptions {
+export interface PagedResultOptions extends RequestOverrides {
   /** Page size. If omitted, the server's default applies for `await result`,
    *  and `ITERATION_PAGE_SIZE` (100) applies for iteration. */
   limit?: number;
@@ -52,6 +52,12 @@ export function createPagedResult<T>(
   const userLimit = options?.limit;
   const startOffset = options?.offset ?? DEFAULT_OFFSET;
   const extraQuery = options?.query ?? {};
+  const overrides: RequestOverrides = {
+    ...(options?.signal !== undefined && { signal: options.signal }),
+    ...(options?.timeout !== undefined && { timeout: options.timeout }),
+    ...(options?.maxRetries !== undefined && { maxRetries: options.maxRetries }),
+    ...(options?.baseUrl !== undefined && { baseUrl: options.baseUrl }),
+  };
 
   const fetchPage = (offset: number, limit: number | undefined): Promise<T[]> =>
     http.get<T[]>(path, {
@@ -61,6 +67,7 @@ export function createPagedResult<T>(
         offset,
       },
       unwrapKey,
+      ...overrides,
     });
 
   // Cache the first page so repeated `await result` calls don't re-fetch.

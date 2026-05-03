@@ -99,7 +99,7 @@ describe('Friends', () => {
       const { client, post } = makeMockHttp();
       post.mockResolvedValue(undefined);
       const result = await new Friends(client).delete({ id: 12 });
-      expect(post).toHaveBeenCalledWith('/delete_friend/12');
+      expect(post).toHaveBeenCalledWith('/delete_friend/12', undefined);
       expect(result).toBeUndefined();
     });
   });

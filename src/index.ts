@@ -23,6 +23,7 @@ export type {
   OAuthToken,
 } from './auth/types.js';
 
+export type { RequestOverrides } from './http.js';
 export type { PagedResult } from './pagination.js';
 
 export type {

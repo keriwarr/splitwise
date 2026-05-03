@@ -134,8 +134,22 @@ describe('Expenses', () => {
       post.mockResolvedValue(undefined);
       const expenses = new Expenses(client);
       const result = await expenses.delete({ id: 7 });
-      expect(post).toHaveBeenCalledWith('/delete_expense/7');
+      expect(post).toHaveBeenCalledWith('/delete_expense/7', undefined);
       expect(result).toBeUndefined();
+    });
+
+    it('forwards per-request overrides', async () => {
+      const { client, post } = makeMockHttp();
+      post.mockResolvedValue(undefined);
+      const controller = new AbortController();
+      await new Expenses(client).delete(
+        { id: 7 },
+        { signal: controller.signal, timeout: 5000 },
+      );
+      expect(post).toHaveBeenCalledWith('/delete_expense/7', {
+        signal: controller.signal,
+        timeout: 5000,
+      });
     });
   });
 
@@ -145,7 +159,7 @@ describe('Expenses', () => {
       post.mockResolvedValue(undefined);
       const expenses = new Expenses(client);
       const result = await expenses.restore({ id: 8 });
-      expect(post).toHaveBeenCalledWith('/undelete_expense/8');
+      expect(post).toHaveBeenCalledWith('/undelete_expense/8', undefined);
       expect(result).toBeUndefined();
     });
   });

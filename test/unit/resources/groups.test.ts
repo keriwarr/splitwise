@@ -63,7 +63,7 @@ describe('Groups', () => {
       const { client, post } = makeMockHttp();
       post.mockResolvedValue(undefined);
       const result = await new Groups(client).delete({ id: 7 });
-      expect(post).toHaveBeenCalledWith('/delete_group/7');
+      expect(post).toHaveBeenCalledWith('/delete_group/7', undefined);
       expect(result).toBeUndefined();
     });
   });
@@ -73,7 +73,7 @@ describe('Groups', () => {
       const { client, post } = makeMockHttp();
       post.mockResolvedValue(undefined);
       const result = await new Groups(client).restore({ id: 8 });
-      expect(post).toHaveBeenCalledWith('/undelete_group/8');
+      expect(post).toHaveBeenCalledWith('/undelete_group/8', undefined);
       expect(result).toBeUndefined();
     });
   });

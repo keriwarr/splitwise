@@ -17,7 +17,7 @@ import {
   createApiError,
 } from './errors.js';
 import { flattenParams, keysToCamelCase, keysToSnakeCase } from './params.js';
-import { withRetry } from './retry.js';
+import { defaultShouldRetry, withRetry } from './retry.js';
 import type { LogLevel, Logger } from './types.js';
 
 // ---------------------------------------------------------------------------
@@ -37,7 +37,23 @@ export interface HttpClientConfig {
   logLevel?: LogLevel;
 }
 
-export interface RequestOptions {
+/**
+ * Per-request overrides exposed publicly to consumers of the SDK. The same
+ * options bag is accepted by every resource method (as the second argument)
+ * and by `sw.rawRequest()`. Internal-only options live on `RequestOptions`.
+ */
+export interface RequestOverrides {
+  /** Cancel the request via an AbortSignal. */
+  signal?: AbortSignal;
+  /** Override the client's per-request timeout (ms) for this call. */
+  timeout?: number;
+  /** Override the client's `maxRetries` for this call (0 disables retry). */
+  maxRetries?: number;
+  /** Override the base URL for this call (rare; useful for testing). */
+  baseUrl?: string;
+}
+
+export interface RequestOptions extends RequestOverrides {
   /** Query string parameters. Always sent in the URL regardless of method. */
   query?: Record<string, unknown>;
   /** Body, used for POST/PUT/DELETE. */
@@ -258,9 +274,17 @@ export class HttpClient {
     path: string,
     options: RequestOptions = {},
   ): Promise<T> {
+    const maxRetries = options.maxRetries ?? this.maxRetries;
+    const callerSignal = options.signal;
+    // Don't burn through retries if the caller has already given up.
+    const shouldRetry = (ctx: Parameters<typeof defaultShouldRetry>[0]): boolean => {
+      if (callerSignal?.aborted === true) return false;
+      return defaultShouldRetry(ctx);
+    };
     return withRetry(
       () => this.requestOnce<T>(method, path, options),
-      { maxRetries: this.maxRetries },
+      { maxRetries },
+      shouldRetry,
     ).catch((error: unknown) => {
       if (error instanceof Error) {
         this.logger.error(`${method} ${path} failed: ${error.message}`);
@@ -274,9 +298,11 @@ export class HttpClient {
     path: string,
     options: RequestOptions,
   ): Promise<T> {
+    const baseUrl = options.baseUrl ?? this.baseUrl;
+    const timeout = options.timeout ?? this.timeout;
     const queryString =
       options.query !== undefined ? buildQueryString(options.query) : '';
-    const url = `${joinUrl(this.baseUrl, path)}${queryString}`;
+    const url = `${joinUrl(baseUrl, path)}${queryString}`;
 
     const token = await this.getAccessToken();
     const headers: Record<string, string> = {
@@ -308,10 +334,29 @@ export class HttpClient {
 
     this.logger.debug(`${method} ${url}`);
 
+    // Combine the timeout-driven AbortController with any caller-supplied
+    // signal. We can't use AbortSignal.any() because it's Node 20+; instead,
+    // wire up a manual listener that aborts our controller when the caller
+    // signal fires.
     const controller = new AbortController();
     const timeoutHandle = setTimeout(() => {
       controller.abort();
-    }, this.timeout);
+    }, timeout);
+    const callerSignal = options.signal;
+    let abortListenerCleanup: (() => void) | undefined;
+    if (callerSignal !== undefined) {
+      if (callerSignal.aborted) {
+        controller.abort();
+      } else {
+        const onAbort = (): void => {
+          controller.abort();
+        };
+        callerSignal.addEventListener('abort', onAbort);
+        abortListenerCleanup = (): void => {
+          callerSignal.removeEventListener('abort', onAbort);
+        };
+      }
+    }
 
     let response: Response;
     try {
@@ -323,11 +368,14 @@ export class HttpClient {
       });
     } catch (error) {
       const err = error as Error;
-      // AbortError fires both on timeout and on caller-initiated abort; in
-      // either case it surfaces to the user as a connection failure.
+      // AbortError fires both on timeout and on caller-initiated abort. We
+      // distinguish them by checking which side actually pulled the trigger.
       if (err.name === 'AbortError') {
+        if (callerSignal?.aborted === true) {
+          throw new SplitwiseConnectionError('Request aborted by caller', err);
+        }
         throw new SplitwiseConnectionError(
-          `Request timed out after ${this.timeout}ms`,
+          `Request timed out after ${timeout}ms`,
           err,
         );
       }
@@ -337,6 +385,7 @@ export class HttpClient {
       );
     } finally {
       clearTimeout(timeoutHandle);
+      abortListenerCleanup?.();
     }
 
     this.logger.debug(`${method} ${url} -> ${response.status}`);

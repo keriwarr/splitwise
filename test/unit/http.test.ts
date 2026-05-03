@@ -399,4 +399,109 @@ describe('HttpClient', () => {
       expect(result).toBeUndefined();
     });
   });
+
+  describe('per-request overrides', () => {
+    function abortableFetch(): (url: string, init: RequestInit) => Promise<Response> {
+      return (_url, init) =>
+        new Promise<Response>((_resolve, reject) => {
+          const signal = init.signal as AbortSignal | null;
+          const rejectAborted = (): void => {
+            const abortErr = new Error('aborted');
+            abortErr.name = 'AbortError';
+            reject(abortErr);
+          };
+          if (signal?.aborted === true) {
+            rejectAborted();
+            return;
+          }
+          signal?.addEventListener('abort', rejectAborted);
+        });
+    }
+
+    it('caller-supplied AbortSignal aborts the request', async () => {
+      const { client, fetchMock } = makeClient(abortableFetch());
+
+      const controller = new AbortController();
+      const promise = client.get('/get_expenses', {
+        signal: controller.signal,
+      });
+      const settled = promise.catch((e: unknown) => e);
+      controller.abort();
+      const result = await settled;
+
+      expect(result).toBeInstanceOf(SplitwiseConnectionError);
+      expect((result as Error).message).toContain('aborted by caller');
+      expect(fetchMock).toHaveBeenCalledOnce();
+    });
+
+    it('caller-aborted requests do not retry', async () => {
+      const fetchMock = vi.fn(abortableFetch());
+      const client = new HttpClient({
+        baseUrl: BASE_URL,
+        getAccessToken: async () => 'test-token',
+        fetch: fetchMock as unknown as typeof fetch,
+        maxRetries: 5,
+      });
+
+      const controller = new AbortController();
+      const settled = client
+        .get('/get_expenses', { signal: controller.signal })
+        .catch((e: unknown) => e);
+      controller.abort();
+      await settled;
+
+      // Only the initial attempt should have happened -- retries are skipped.
+      expect(fetchMock).toHaveBeenCalledOnce();
+    });
+
+    it('per-request timeout overrides the client default', async () => {
+      vi.useFakeTimers();
+      try {
+        const { client } = makeClient(
+          (_url, init) =>
+            new Promise<Response>((_resolve, reject) => {
+              const signal = (init as RequestInit).signal as AbortSignal | null;
+              signal?.addEventListener('abort', () => {
+                const abortErr = new Error('aborted');
+                abortErr.name = 'AbortError';
+                reject(abortErr);
+              });
+            }),
+          { timeout: 100_000, maxRetries: 0 },
+        );
+
+        // Caller wants a much shorter timeout for this single request.
+        const promise = client.get('/get_expenses', { timeout: 500 });
+        const settled = promise.catch((e: unknown) => e);
+
+        await vi.advanceTimersByTimeAsync(501);
+        const result = await settled;
+
+        expect(result).toBeInstanceOf(SplitwiseConnectionError);
+        expect((result as Error).message).toContain('500ms');
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('per-request maxRetries=0 disables retry on transient errors', async () => {
+      const fetchMock = vi.fn(async () => jsonResponse(503, {}));
+      const client = new HttpClient({
+        baseUrl: BASE_URL,
+        getAccessToken: async () => 'test-token',
+        fetch: fetchMock as unknown as typeof fetch,
+        maxRetries: 5,
+      });
+
+      await client.get('/get_expenses', { maxRetries: 0 }).catch(() => {});
+      // 1 attempt, no retries.
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+    });
+
+    it('per-request baseUrl overrides the client default', async () => {
+      const { client, fetchMock } = makeClient(async () => jsonResponse(200, {}));
+      await client.get('/test', { baseUrl: 'https://other.example.com' });
+      expect(fetchMock.mock.calls[0]![0]).toBe('https://other.example.com/test');
+    });
+  });
 });
